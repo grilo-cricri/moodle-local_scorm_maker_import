@@ -1,9 +1,10 @@
 # Moodle Marketplace metadata — Scorm Maker Import
 
 This file contains the copy and technical metadata prepared for the initial
-Moodle Marketplace listing. The public repository, tracker, documentation,
-screenshots, and maintainer account fields must be completed by the publisher
-before submission; this repository currently has no public Git remote.
+Moodle Marketplace listing. The public source repository is available at
+https://github.com/grilo-cricri/scorm_maker_import. The screenshots, support
+channel, test instructions, and maintainer account fields must be completed by
+the publisher before submission.
 
 ## Listing fields
 
@@ -12,8 +13,8 @@ before submission; this repository currently has no public Git remote.
 | Display name | Scorm Maker Import |
 | Component | `local_scorm_maker_import` |
 | Plugin type | Local plugin |
-| Release | 1.2.3 |
-| Build | `2026091400` |
+| Release | 1.2.4 |
+| Build | `2026091401` |
 | Maturity | Stable |
 | License | GNU GPL v3 or later; `pix/icon.svg` is original ScormMaker.com.br artwork explicitly licensed under GPL v3 or later |
 | Business model | Select Free or Paid in the Marketplace submission form |
@@ -93,8 +94,10 @@ The plugin does not store personal data in its own tables. Course activities
 and Book chapters are stored by Moodle core modules and are covered by those
 modules' privacy providers.
 
-## Release notes for 1.2.3
+## Release notes for 1.2.4
 
+- Incremented the plugin build number for Marketplace resubmission; no
+  functional changes.
 - Fixed missing `cmidnumber` metadata when creating SCORM and Book activities.
 - Removed the Moodle 4.5/5.2 undefined-property warnings from the CI run.
 - Declared the tested Moodle support range as 4.5 through 5.2.
@@ -106,9 +109,9 @@ before submitting the listing:
 
 | Marketplace field | Required action |
 |---|---|
-| Public source repository | Publish the repository with the plugin root at repository root; use the eventual GitHub/GitLab URL. |
-| Issue tracker | Provide a public issue tracker URL. |
-| Documentation URL | Publish the README or a dedicated documentation page and provide its public URL. |
+| Public source repository | https://github.com/grilo-cricri/scorm_maker_import |
+| Issue tracker | https://github.com/grilo-cricri/scorm_maker_import/issues (GitHub Issues enabled) |
+| Documentation URL | https://github.com/grilo-cricri/scorm_maker_import/blob/main/README.md |
 | Support/discussion URL | Provide a public support or discussion channel. |
 | Screenshots | Provide screenshots showing the external-service setup and representative request/response flows; the plugin has no standalone UI. |
 | Test SCORM package | Provide a working public ZIP URL under `https://scormmaker.com.br` for the remote-download review flow, or instruct reviewers to use the draft-upload flow. |

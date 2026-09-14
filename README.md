@@ -30,7 +30,7 @@ intervenção manual de um professor:
 ## Requisitos
 
 - Moodle 4.0 ou superior (`$plugin->requires = 2022112800`).
-- A versão 1.2.3 declara suporte às séries Moodle 4.5 até 5.2; essa faixa foi
+- A versão 1.2.4 declara suporte às séries Moodle 4.5 até 5.2; essa faixa foi
   verificada com a suíte PHPUnit em Moodle 4.5.14 e Moodle 5.2.3.
 - `mod_scorm` habilitado no site, para usar o endpoint de importação de SCORM.
 - `mod_book` habilitado no site, para usar o endpoint de importação de Livro.

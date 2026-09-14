@@ -1,5 +1,9 @@
 # Changes — local_scorm_maker_import
 
+## 1.2.4 (2026-09-14) — version 2026091401
+- Maintenance: incremented the plugin build number for the Moodle Marketplace
+  resubmission. No functional changes.
+
 ## 1.2.3 (2026-09-14) — version 2026091400
 - Fixed: supplied Moodle's `cmidnumber` when creating SCORM and Book activities,
   removing undefined-property warnings on Moodle 4.5 and 5.2.
