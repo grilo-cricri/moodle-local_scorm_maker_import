@@ -1,0 +1,25 @@
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dependências e ferramentas PHP
+/vendor/
+.phpunit.result.cache
+.phpunit.cache/
+coverage/
+*.log
+
+# Configurações locais
+.env
+.env.*
+config.php
+moodledata/
+
+# Pacotes gerados
+*.zip
