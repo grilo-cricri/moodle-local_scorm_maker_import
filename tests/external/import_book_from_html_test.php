@@ -21,13 +21,14 @@
  * @category   test
  * @copyright  2024 ScormMaker.com.br
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_scorm_maker_import\external\import_book_from_html
  */
 
 namespace local_scorm_maker_import\external;
 
 /**
  * Testes da função externa import_book_from_html.
+ *
+ * @covers \local_scorm_maker_import\external\import_book_from_html
  */
 final class import_book_from_html_test extends \advanced_testcase {
     public function test_execute_rejects_user_without_capability(): void {

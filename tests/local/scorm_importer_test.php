@@ -21,13 +21,14 @@
  * @category   test
  * @copyright  2024 ScormMaker.com.br
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_scorm_maker_import\local\scorm_importer
  */
 
 namespace local_scorm_maker_import\local;
 
 /**
  * Testes da classe scorm_importer.
+ *
+ * @covers \local_scorm_maker_import\local\scorm_importer
  */
 final class scorm_importer_test extends \advanced_testcase {
     /**

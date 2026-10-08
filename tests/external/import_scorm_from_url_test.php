@@ -21,13 +21,14 @@
  * @category   test
  * @copyright  2024 ScormMaker.com.br
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_scorm_maker_import\external\import_scorm_from_url
  */
 
 namespace local_scorm_maker_import\external;
 
 /**
  * Testes da função externa import_scorm_from_url.
+ *
+ * @covers \local_scorm_maker_import\external\import_scorm_from_url
  */
 final class import_scorm_from_url_test extends \advanced_testcase {
     public function test_execute_rejects_user_without_capability(): void {
