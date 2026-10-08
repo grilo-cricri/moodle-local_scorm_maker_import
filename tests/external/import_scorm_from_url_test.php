@@ -195,4 +195,17 @@ final class import_scorm_from_url_test extends \advanced_testcase {
         $this->assertSame('packagetoolarge', $thrown->errorcode);
         $this->assertSame(0, $DB->count_records('scorm', ['course' => $course->id]));
     }
+
+    public function test_execute_without_name_uses_language_string(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+
+        $result = import_scorm_from_url::execute($course->id, '', '', 0, $this->draft_with_basic_package());
+
+        $scorm = $DB->get_record('scorm', ['id' => $result['scormid']], '*', MUST_EXIST);
+        $this->assertSame(get_string('defaultscormname', 'local_scorm_maker_import'), $scorm->name);
+    }
 }

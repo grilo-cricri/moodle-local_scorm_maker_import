@@ -26,6 +26,8 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['bookintro'] = 'Introdução';
 $string['chapterimporterror'] = 'Não foi possível criar um capítulo durante a importação do livro: {$a}.';
+$string['defaultbookname'] = 'Livro importado';
+$string['defaultscormname'] = 'SCORM importado';
 $string['invalidcourse'] = 'ID de curso inválido: {$a}.';
 $string['invaliddraftfile'] = 'A área de rascunho informada deve conter exatamente um arquivo.';
 $string['invalidscormsource'] = 'Informe exatamente um dos parâmetros "url" ou "draftitemid" (não ambos, nem nenhum).';

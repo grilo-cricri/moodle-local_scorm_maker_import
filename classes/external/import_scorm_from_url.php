@@ -53,7 +53,12 @@ class import_scorm_from_url extends external_api {
                 VALUE_DEFAULT,
                 ''
             ),
-            'name' => new external_value(PARAM_TEXT, 'Name of the SCORM activity', VALUE_DEFAULT, 'SCORM importado'),
+            'name' => new external_value(
+                PARAM_TEXT,
+                'Name of the SCORM activity; empty uses the defaultscormname language string',
+                VALUE_DEFAULT,
+                ''
+            ),
             'sectionnum' => new external_value(PARAM_INT, 'Course section number to add the activity to', VALUE_DEFAULT, 0),
             'draftitemid' => new external_value(
                 PARAM_INT,
@@ -79,7 +84,7 @@ class import_scorm_from_url extends external_api {
     public static function execute(
         int $courseid,
         string $url = '',
-        string $name = 'SCORM importado',
+        string $name = '',
         int $sectionnum = 0,
         int $draftitemid = 0
     ): array {
@@ -118,6 +123,10 @@ class import_scorm_from_url extends external_api {
         if ($hasurl === $hasdraftitem) {
             // Nenhum ou os dois foram informados — é obrigatório exatamente uma fonte.
             throw new moodle_exception('invalidscormsource', 'local_scorm_maker_import');
+        }
+
+        if ($name === '') {
+            $name = get_string('defaultscormname', 'local_scorm_maker_import');
         }
 
         // Same limit as uploading the package through the SCORM activity form.

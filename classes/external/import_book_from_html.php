@@ -48,7 +48,12 @@ class import_book_from_html extends external_api {
         return new external_function_parameters([
             'courseid' => new external_value(PARAM_INT, 'Id of the course to add the Book activity to'),
             'htmlcontent' => new external_value(PARAM_RAW, 'Full HTML content of the book'),
-            'name' => new external_value(PARAM_TEXT, 'Title of the book', VALUE_DEFAULT, 'Livro importado'),
+            'name' => new external_value(
+                PARAM_TEXT,
+                'Title of the book; empty uses the defaultbookname language string',
+                VALUE_DEFAULT,
+                ''
+            ),
             'description' => new external_value(PARAM_RAW, 'Book description/introduction HTML', VALUE_DEFAULT, ''),
             'sectionnum' => new external_value(PARAM_INT, 'Course section number to add the activity to', VALUE_DEFAULT, 0),
         ]);
@@ -67,7 +72,7 @@ class import_book_from_html extends external_api {
     public static function execute(
         int $courseid,
         string $htmlcontent,
-        string $name = 'Livro importado',
+        string $name = '',
         string $description = '',
         int $sectionnum = 0
     ): array {
@@ -102,6 +107,11 @@ class import_book_from_html extends external_api {
         }
 
         book_importer::require_book_module_available();
+
+        if ($name === '') {
+            $name = get_string('defaultbookname', 'local_scorm_maker_import');
+        }
+
 
         $created = book_importer::create_book_activity($course, $name, $description, $sectionnum);
 

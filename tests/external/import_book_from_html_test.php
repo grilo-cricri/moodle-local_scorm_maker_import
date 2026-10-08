@@ -68,4 +68,17 @@ final class import_book_from_html_test extends \advanced_testcase {
             'Chapter Two',
         ], $titles);
     }
+
+    public function test_execute_without_name_uses_language_string(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+
+        $result = import_book_from_html::execute($course->id, '<h1>Chapter</h1><p>Content</p>');
+
+        $book = $DB->get_record('book', ['id' => $result['bookid']], '*', MUST_EXIST);
+        $this->assertSame(get_string('defaultbookname', 'local_scorm_maker_import'), $book->name);
+    }
 }
