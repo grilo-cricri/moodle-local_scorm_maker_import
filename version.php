@@ -25,12 +25,12 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->version    = 2026091401;
-$plugin->requires   = 2022112800; // Moodle 4.0.
+$plugin->requires   = 2024100700; // Moodle 4.5.
 $plugin->supported  = [405, 502]; // Moodle 4.5 through 5.2.
 $plugin->component  = 'local_scorm_maker_import';
 $plugin->maturity   = MATURITY_STABLE;
 $plugin->release    = '1.2.4';
 $plugin->dependencies = [
-    'mod_scorm' => 2022112800,
-    'mod_book'  => 2022112800,
+    'mod_scorm' => 2024100700,
+    'mod_book'  => 2024100700,
 ];
