@@ -13,10 +13,10 @@ the publisher before submission.
 | Display name | Scorm Maker Import |
 | Component | `local_scorm_maker_import` |
 | Plugin type | Local plugin |
-| Release | 1.2.4 |
-| Build | `2026091401` |
+| Release | 1.2.5 |
+| Build | `2026100800` |
 | Maturity | Stable |
-| License | GNU GPL v3 or later; `pix/icon.svg` is original ScormMaker.com.br artwork explicitly licensed under GPL v3 or later |
+| License | GNU GPL v3 or later (full text in `LICENSE`); `pix/icon.svg` is original ScormMaker.com.br artwork explicitly licensed under GPL v3 or later |
 | Business model | Select Free or Paid in the Marketplace submission form |
 
 ### Short description
@@ -53,15 +53,16 @@ own; the activities it creates remain managed by Moodle's `mod_scorm` and
 
 ## Requirements and compatibility
 
-- Minimum Moodle requirement: 4.0 (`$plugin->requires = 2022112800`).
+- Minimum Moodle requirement: 4.5 (`$plugin->requires = 2024100700`).
 - Declared supported Moodle branches: 4.5 through 5.2
   (`$plugin->supported = [405, 502]`).
 - Required Moodle modules: `mod_scorm` and `mod_book`.
 - Required PHP extension: `ext-zip`, already required by the Moodle SCORM
   workflow.
 
-The complete plugin PHPUnit suite was run successfully on Moodle 4.5.14 and
-Moodle 5.2.3 with PHP 8.3 and PostgreSQL 16.
+Release 1.2.5 passed the complete plugin PHPUnit suite and moodle-cs on
+Moodle 4.5.12 with PHP 8.3 and PostgreSQL 16; the GitHub Actions workflow runs
+it on Moodle 4.5 through 5.2.
 
 ## Installation and setup
 
@@ -94,13 +95,28 @@ The plugin does not store personal data in its own tables. Course activities
 and Book chapters are stored by Moodle core modules and are covered by those
 modules' privacy providers.
 
-## Release notes for 1.2.4
+## Release notes for 1.2.5
 
-- Incremented the plugin build number for Marketplace resubmission; no
-  functional changes.
-- Fixed missing `cmidnumber` metadata when creating SCORM and Book activities.
-- Removed the Moodle 4.5/5.2 undefined-property warnings from the CI run.
-- Declared the tested Moodle support range as 4.5 through 5.2.
+Changes requested by the Moodle Plugins Directory review:
+
+- Added: `LICENSE` file (GNU GPL v3) in the plugin root.
+- Changed: temporary package files are created with `make_request_directory()`
+  instead of a hand-made directory under `$CFG->tempdir`.
+- Added: SCORM packages are limited to the course upload size,
+  `get_max_upload_file_size($CFG->maxbytes, $course->maxbytes)`, the same
+  limit as the activity form. Downloads set `CURLOPT_MAXFILESIZE` and stop
+  from a progress callback once over the limit; draft files are checked
+  before copying. New error `packagetoolarge`.
+- Changed: `$plugin->requires` and the `mod_scorm` / `mod_book` dependencies
+  raised to `2024100700` (Moodle 4.5), matching `$plugin->supported`: the
+  code uses `core_external` (Moodle 4.2+) and PHP 8 syntax.
+- Changed: the `name` parameter of both functions now defaults to `''`; an
+  empty name uses the new `defaultscormname` / `defaultbookname` language
+  strings instead of the hard-coded Portuguese names.
+- Docs: README in English (Portuguese kept as `README.pt_br.md`); code
+  comments and PHPDoc translated to English; screenshots in
+  `docs/screenshots/`.
+- CI: GitHub Actions workflow running moodle-plugin-ci on Moodle 4.5–5.2.
 
 ## Publisher-supplied Marketplace fields
 
@@ -113,7 +129,7 @@ before submitting the listing:
 | Issue tracker | https://github.com/grilo-cricri/scorm_maker_import/issues (GitHub Issues enabled) |
 | Documentation URL | https://github.com/grilo-cricri/scorm_maker_import/blob/main/README.md |
 | Support/discussion URL | Provide a public support or discussion channel. |
-| Screenshots | Provide screenshots showing the external-service setup and representative request/response flows; the plugin has no standalone UI. |
+| Screenshots | Upload the PNGs in `docs/screenshots/` (generated from a Moodle 4.5 test site): external service functions and the activities created by the web services. |
 | Test SCORM package | Provide a working public ZIP URL under `https://scormmaker.com.br` for the remote-download review flow, or instruct reviewers to use the draft-upload flow. |
 | Maintainer/provider details | Complete the publisher and support details in the Marketplace account. |
 | Icon licensing | Confirmed: `pix/icon.svg` is original artwork created by ScormMaker.com.br in CorelDRAW and licensed under GPL v3 or later. |
