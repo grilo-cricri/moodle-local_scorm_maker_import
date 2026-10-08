@@ -34,6 +34,7 @@ $string['invalidzip'] = 'The downloaded file is not a valid ZIP archive.';
 $string['nobookmodule'] = 'The Book activity module (mod_book) is not installed or is disabled on this site.';
 $string['nomanifest'] = 'The ZIP archive does not contain an imsmanifest.xml file at its root.';
 $string['noscormmodule'] = 'The SCORM activity module (mod_scorm) is not installed or is disabled on this site.';
+$string['packagetoolarge'] = 'The package is larger than the maximum upload size allowed in this course ({$a}).';
 $string['pluginname'] = 'Scorm Maker Import';
 $string['privacy:metadata'] = 'The Scorm Maker Import plugin does not store any personal data. It creates SCORM and Book activities on behalf of the calling web service user, but the data belonging to those activities is described by their own privacy providers.';
 $string['scormdownloaderror'] = 'The SCORM package could not be downloaded from the given URL: {$a}.';

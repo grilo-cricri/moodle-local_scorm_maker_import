@@ -152,4 +152,47 @@ final class import_scorm_from_url_test extends \advanced_testcase {
         $scorm = $DB->get_record('scorm', ['id' => $result['scormid']], '*', MUST_EXIST);
         $this->assertSame('Uploaded SCORM', $scorm->name);
     }
+
+    /**
+     * Stores the basic SCORM test package in a new draft area of the current user.
+     *
+     * @return int Draft item id.
+     */
+    private function draft_with_basic_package(): int {
+        global $CFG, $USER;
+
+        $draftitemid = file_get_unused_draft_itemid();
+        get_file_storage()->create_file_from_pathname([
+            'component' => 'user',
+            'filearea'  => 'draft',
+            'contextid' => \context_user::instance($USER->id)->id,
+            'itemid'    => $draftitemid,
+            'filepath'  => '/',
+            'filename'  => 'package.zip',
+        ], $CFG->dirroot . '/mod/scorm/tests/packages/singlescobasic.zip');
+
+        return $draftitemid;
+    }
+
+    /**
+     * A package above the course upload limit is refused, as in the SCORM activity form, and no activity is created.
+     */
+    public function test_execute_rejects_package_above_course_upload_limit(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        set_config('maxbytes', 0);
+        $course = $this->getDataGenerator()->create_course(['maxbytes' => 1024]);
+
+        $thrown = null;
+        try {
+            import_scorm_from_url::execute($course->id, '', 'Too large', 0, $this->draft_with_basic_package());
+        } catch (\moodle_exception $e) {
+            $thrown = $e;
+        }
+        $this->assertNotNull($thrown);
+        $this->assertSame('packagetoolarge', $thrown->errorcode);
+        $this->assertSame(0, $DB->count_records('scorm', ['course' => $course->id]));
+    }
 }

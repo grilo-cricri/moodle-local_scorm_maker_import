@@ -120,9 +120,12 @@ class import_scorm_from_url extends external_api {
             throw new moodle_exception('invalidscormsource', 'local_scorm_maker_import');
         }
 
+        // Same limit as uploading the package through the SCORM activity form.
+        $maxbytes = scorm_importer::max_package_bytes($course);
         $zippath = $hasurl
-            ? scorm_importer::download_to_temp($url)
-            : scorm_importer::stage_file_from_draft($draftitemid);
+            ? scorm_importer::download_to_temp($url, $maxbytes)
+            : scorm_importer::stage_file_from_draft($draftitemid, $maxbytes);
+
 
         try {
             scorm_importer::validate_manifest($zippath);

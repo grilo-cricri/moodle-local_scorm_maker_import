@@ -43,6 +43,12 @@ class scorm_importer {
     /** @var int Port permitted for remote SCORM package downloads. */
     private const ALLOWED_DOWNLOAD_PORT = 443;
 
+    /** @var int cURL error returned when a declared Content-Length exceeds CURLOPT_MAXFILESIZE. */
+    private const CURLE_FILESIZE_EXCEEDED = 63;
+
+    /** @var int cURL error returned when the progress callback aborts the transfer. */
+    private const CURLE_ABORTED_BY_CALLBACK = 42;
+
     /**
      * Verifica se o mod_scorm está instalado e habilitado neste site.
      *
@@ -55,6 +61,21 @@ class scorm_importer {
         if (!$module || empty($module->visible)) {
             throw new moodle_exception('noscormmodule', 'local_scorm_maker_import');
         }
+    }
+
+    /**
+     * Returns the largest package size accepted for the given course.
+     *
+     * This is the same limit a teacher gets when uploading a package through the activity form: the site and course
+     * maximum upload sizes, capped by the PHP upload limits.
+     *
+     * @param stdClass $course Course record.
+     * @return int Maximum size in bytes.
+     */
+    public static function max_package_bytes(stdClass $course): int {
+        global $CFG;
+
+        return (int) get_max_upload_file_size($CFG->maxbytes, $course->maxbytes ?? 0);
     }
 
     /**
@@ -97,14 +118,31 @@ class scorm_importer {
     }
 
     /**
-     * Baixa um arquivo ZIP remoto para um arquivo único dentro de $CFG->tempdir.
+     * Rejects a package larger than the allowed size.
      *
-     * @param string $url URL HTTPS do pacote ZIP no host autorizado.
-     * @return string Caminho absoluto do arquivo temporário baixado.
-     * @throws moodle_exception se o download falhar por qualquer motivo.
+     * @param int $size Size of the package in bytes.
+     * @param int $maxbytes Maximum size in bytes (see max_package_bytes()).
+     * @throws moodle_exception packagetoolarge if $size is above $maxbytes.
      */
-    public static function download_to_temp(string $url): string {
+    public static function require_size_within_limit(int $size, int $maxbytes): void {
+        if ($size > $maxbytes) {
+            throw new moodle_exception('packagetoolarge', 'local_scorm_maker_import', '', display_size($maxbytes));
+        }
+    }
+
+    /**
+     * Downloads a remote ZIP file into a unique temporary file.
+     *
+     * The transfer stops as soon as it goes over $maxbytes, whether or not the server sends a Content-Length header.
+     *
+     * @param string $url HTTPS URL of the ZIP package on the authorised host.
+     * @param int $maxbytes Maximum size of the package in bytes (see max_package_bytes()).
+     * @return string Absolute path of the downloaded temporary file.
+     * @throws moodle_exception if the package is too large or the download fails for any other reason.
+     */
+    public static function download_to_temp(string $url, int $maxbytes): string {
         global $CFG;
+        require_once($CFG->libdir . '/filelib.php');
 
         self::validate_download_url($url);
 
@@ -117,8 +155,9 @@ class scorm_importer {
 
         $curl = new \curl();
         try {
-            // Redirecionamentos ficam desabilitados.
-            // Isso impede que a origem autorizada encaminhe o servidor Moodle para outro host.
+            // Redirects are disabled so the authorised origin cannot send the Moodle server to another host.
+            // CURLOPT_MAXFILESIZE refuses a declared Content-Length above the limit before the body is written, and
+            // the progress callback aborts chunked or undeclared transfers as soon as they go over it.
             $curl->get($url, null, [
                 'CURLOPT_SSL_VERIFYPEER' => true,
                 'CURLOPT_SSL_VERIFYHOST' => 2,
@@ -129,6 +168,9 @@ class scorm_importer {
                 'CURLOPT_RETURNTRANSFER' => true,
                 'CURLOPT_NOBODY' => false,
                 'CURLOPT_FILE' => $filehandle,
+                'CURLOPT_MAXFILESIZE' => $maxbytes,
+                'CURLOPT_NOPROGRESS' => false,
+                'CURLOPT_PROGRESSFUNCTION' => self::progress_limiter($maxbytes),
             ]);
         } finally {
             fclose($filehandle);
@@ -136,10 +178,19 @@ class scorm_importer {
 
         @chmod($tempfile, $CFG->filepermissions);
 
+        $errno = $curl->get_errno();
+        $toolarge = $errno === self::CURLE_FILESIZE_EXCEEDED
+            || $errno === self::CURLE_ABORTED_BY_CALLBACK
+            || (is_readable($tempfile) && filesize($tempfile) > $maxbytes);
+        if ($toolarge) {
+            self::delete_temp_file($tempfile);
+            throw new moodle_exception('packagetoolarge', 'local_scorm_maker_import', '', display_size($maxbytes));
+        }
+
         $info = $curl->get_info();
         $status = is_array($info) ? (int) ($info['http_code'] ?? 0) : 0;
 
-        if ($curl->get_errno() !== 0 || $status !== 200 || !is_readable($tempfile)) {
+        if ($errno !== 0 || $status !== 200 || !is_readable($tempfile)) {
             self::delete_temp_file($tempfile);
             throw new moodle_exception('scormdownloaderror', 'local_scorm_maker_import', '', $url);
         }
@@ -148,18 +199,30 @@ class scorm_importer {
     }
 
     /**
-     * Copia o único arquivo encontrado na área de rascunho de um usuário para um arquivo único dentro de $CFG->tempdir.
+     * Builds the cURL progress callback that aborts a download once it goes over the size limit.
      *
-     * Usado como alternativa a download_to_temp() quando o chamador enviou o ZIP do SCORM diretamente via
-     * /webservice/upload.php, em vez de apontar para uma URL HTTPS autorizada. Áreas de rascunho sempre pertencem ao
-     * contexto do próprio usuário atual ($USER), portanto isso não pode ser usado para acessar arquivos de
-     * outro usuário.
-     *
-     * @param int $draftitemid Id da área de rascunho (item id) retornado por /webservice/upload.php.
-     * @return string Caminho absoluto do arquivo temporário copiado.
-     * @throws moodle_exception se a área de rascunho estiver vazia ou contiver mais de um arquivo.
+     * @param int $maxbytes Maximum size of the package in bytes.
+     * @return callable Callback for CURLOPT_PROGRESSFUNCTION; a non-zero return aborts the transfer.
      */
-    public static function stage_file_from_draft(int $draftitemid): string {
+    public static function progress_limiter(int $maxbytes): callable {
+        return static function ($handle, $downloadtotal, $downloaded) use ($maxbytes): int {
+            return ($downloadtotal > $maxbytes || $downloaded > $maxbytes) ? 1 : 0;
+        };
+    }
+
+    /**
+     * Copies the only file found in the current user's draft area into a unique temporary file.
+     *
+     * Used instead of download_to_temp() when the caller uploaded the ZIP through /webservice/upload.php rather than
+     * pointing to an authorised HTTPS URL. Draft areas always belong to the current user's own context ($USER), so
+     * this cannot be used to read another user's files.
+     *
+     * @param int $draftitemid Draft area item id returned by /webservice/upload.php.
+     * @param int $maxbytes Maximum size of the package in bytes (see max_package_bytes()).
+     * @return string Absolute path of the copied temporary file.
+     * @throws moodle_exception if the draft area is empty, holds more than one file, or the file is too large.
+     */
+    public static function stage_file_from_draft(int $draftitemid, int $maxbytes): string {
         global $USER;
 
         $usercontext = \context_user::instance($USER->id);
@@ -170,8 +233,11 @@ class scorm_importer {
             throw new moodle_exception('invaliddraftfile', 'local_scorm_maker_import');
         }
 
+        $file = reset($files);
+        self::require_size_within_limit((int) $file->get_filesize(), $maxbytes);
+
         $tempfile = self::new_temp_path();
-        reset($files)->copy_content_to($tempfile);
+        $file->copy_content_to($tempfile);
 
         return $tempfile;
     }

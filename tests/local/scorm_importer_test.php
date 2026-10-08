@@ -111,7 +111,7 @@ final class scorm_importer_test extends \advanced_testcase {
         $this->resetAfterTest();
 
         $this->assert_throws_errorcode('invalidscormurl', function (): void {
-            scorm_importer::download_to_temp('ftp://scormmaker.com.br/package.zip');
+            scorm_importer::download_to_temp('ftp://scormmaker.com.br/package.zip', 1048576);
         });
     }
 
@@ -165,7 +165,7 @@ final class scorm_importer_test extends \advanced_testcase {
             'filename'  => 'package.zip',
         ], $CFG->dirroot . '/mod/scorm/tests/packages/singlescobasic.zip');
 
-        $stagedpath = scorm_importer::stage_file_from_draft($draftitemid);
+        $stagedpath = scorm_importer::stage_file_from_draft($draftitemid, 1048576);
 
         $this->assertFileExists($stagedpath);
         scorm_importer::validate_manifest($stagedpath);
@@ -179,7 +179,7 @@ final class scorm_importer_test extends \advanced_testcase {
         $emptydraftitemid = file_get_unused_draft_itemid();
 
         $this->assert_throws_errorcode('invaliddraftfile', function () use ($emptydraftitemid): void {
-            scorm_importer::stage_file_from_draft($emptydraftitemid);
+            scorm_importer::stage_file_from_draft($emptydraftitemid, 1048576);
         });
     }
 
@@ -209,5 +209,54 @@ final class scorm_importer_test extends \advanced_testcase {
         scorm_importer::delete_temp_file('');
         scorm_importer::delete_temp_file(make_request_directory() . '/missing.zip');
         $this->assertTrue(true);
+    }
+
+    public function test_stage_file_from_draft_rejects_file_above_limit(): void {
+        global $CFG, $USER;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $source = $CFG->dirroot . '/mod/scorm/tests/packages/singlescobasic.zip';
+        $draftitemid = file_get_unused_draft_itemid();
+        get_file_storage()->create_file_from_pathname([
+            'component' => 'user',
+            'filearea'  => 'draft',
+            'contextid' => \context_user::instance($USER->id)->id,
+            'itemid'    => $draftitemid,
+            'filepath'  => '/',
+            'filename'  => 'package.zip',
+        ], $source);
+
+        $this->assert_throws_errorcode('packagetoolarge', function () use ($draftitemid, $source): void {
+            scorm_importer::stage_file_from_draft($draftitemid, filesize($source) - 1);
+        });
+    }
+
+    public function test_require_size_within_limit(): void {
+        scorm_importer::require_size_within_limit(100, 100);
+
+        $this->assert_throws_errorcode('packagetoolarge', function (): void {
+            scorm_importer::require_size_within_limit(101, 100);
+        });
+    }
+
+    public function test_progress_limiter_aborts_only_above_limit(): void {
+        $limiter = scorm_importer::progress_limiter(100);
+
+        $this->assertSame(0, $limiter(null, 0, 0));
+        $this->assertSame(0, $limiter(null, 100, 100));
+        $this->assertSame(1, $limiter(null, 101, 0), 'Declared size above the limit.');
+        $this->assertSame(1, $limiter(null, 0, 101), 'Undeclared size, downloaded bytes above the limit.');
+    }
+
+    public function test_max_package_bytes_follows_course_limit(): void {
+        $this->resetAfterTest();
+
+        set_config('maxbytes', 0);
+        $course = $this->getDataGenerator()->create_course(['maxbytes' => 1024]);
+        $this->assertSame(1024, scorm_importer::max_package_bytes($course));
+
+        set_config('maxbytes', 512);
+        $this->assertSame(512, scorm_importer::max_package_bytes($course));
     }
 }
