@@ -15,19 +15,20 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Testes da função externa import_scorm_from_url.
+ * Tests for the import_scorm_from_url external function.
  *
  * @package    local_scorm_maker_import
  * @category   test
  * @copyright  2024 ScormMaker.com.br
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_scorm_maker_import\external\import_scorm_from_url
  */
 
 namespace local_scorm_maker_import\external;
 
 /**
- * Testes da função externa import_scorm_from_url.
+ * Tests for the import_scorm_from_url external function.
+ *
+ * @covers \local_scorm_maker_import\external\import_scorm_from_url
  */
 final class import_scorm_from_url_test extends \advanced_testcase {
     public function test_execute_rejects_user_without_capability(): void {
@@ -59,9 +60,9 @@ final class import_scorm_from_url_test extends \advanced_testcase {
     }
 
     /**
-     * Um chamador sem a capability não pode conseguir distinguir "curso não existe" de
-     * "curso existe mas eu não tenho a capability" pelo tipo de exceção — essa distinção
-     * permitiria a um portador de token enumerar quais ids de curso existem no site.
+     * A caller without the capability must not be able to tell "course does not exist" apart from
+     * "course exists but I lack the capability" by the exception type, since that distinction
+     * would let a token holder enumerate which course ids exist on the site.
      */
     public function test_execute_rejects_invalid_course_identically_without_capability(): void {
         $this->resetAfterTest();
@@ -151,5 +152,61 @@ final class import_scorm_from_url_test extends \advanced_testcase {
         $this->assertGreaterThan(0, $result['scormid']);
         $scorm = $DB->get_record('scorm', ['id' => $result['scormid']], '*', MUST_EXIST);
         $this->assertSame('Uploaded SCORM', $scorm->name);
+    }
+
+    /**
+     * Stores the basic SCORM test package in a new draft area of the current user.
+     *
+     * @return int Draft item id.
+     */
+    private function draft_with_basic_package(): int {
+        global $CFG, $USER;
+
+        $draftitemid = file_get_unused_draft_itemid();
+        get_file_storage()->create_file_from_pathname([
+            'component' => 'user',
+            'filearea'  => 'draft',
+            'contextid' => \context_user::instance($USER->id)->id,
+            'itemid'    => $draftitemid,
+            'filepath'  => '/',
+            'filename'  => 'package.zip',
+        ], $CFG->dirroot . '/mod/scorm/tests/packages/singlescobasic.zip');
+
+        return $draftitemid;
+    }
+
+    /**
+     * A package above the course upload limit is refused, as in the SCORM activity form, and no activity is created.
+     */
+    public function test_execute_rejects_package_above_course_upload_limit(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        set_config('maxbytes', 0);
+        $course = $this->getDataGenerator()->create_course(['maxbytes' => 1024]);
+
+        $thrown = null;
+        try {
+            import_scorm_from_url::execute($course->id, '', 'Too large', 0, $this->draft_with_basic_package());
+        } catch (\moodle_exception $e) {
+            $thrown = $e;
+        }
+        $this->assertNotNull($thrown);
+        $this->assertSame('packagetoolarge', $thrown->errorcode);
+        $this->assertSame(0, $DB->count_records('scorm', ['course' => $course->id]));
+    }
+
+    public function test_execute_without_name_uses_language_string(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+
+        $result = import_scorm_from_url::execute($course->id, '', '', 0, $this->draft_with_basic_package());
+
+        $scorm = $DB->get_record('scorm', ['id' => $result['scormid']], '*', MUST_EXIST);
+        $this->assertSame(get_string('defaultscormname', 'local_scorm_maker_import'), $scorm->name);
     }
 }

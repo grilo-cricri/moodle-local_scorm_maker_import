@@ -15,19 +15,20 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Testes da função externa import_book_from_html.
+ * Tests for the import_book_from_html external function.
  *
  * @package    local_scorm_maker_import
  * @category   test
  * @copyright  2024 ScormMaker.com.br
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_scorm_maker_import\external\import_book_from_html
  */
 
 namespace local_scorm_maker_import\external;
 
 /**
- * Testes da função externa import_book_from_html.
+ * Tests for the import_book_from_html external function.
+ *
+ * @covers \local_scorm_maker_import\external\import_book_from_html
  */
 final class import_book_from_html_test extends \advanced_testcase {
     public function test_execute_rejects_user_without_capability(): void {
@@ -67,5 +68,18 @@ final class import_book_from_html_test extends \advanced_testcase {
             'Chapter One',
             'Chapter Two',
         ], $titles);
+    }
+
+    public function test_execute_without_name_uses_language_string(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+
+        $result = import_book_from_html::execute($course->id, '<h1>Chapter</h1><p>Content</p>');
+
+        $book = $DB->get_record('book', ['id' => $result['bookid']], '*', MUST_EXIST);
+        $this->assertSame(get_string('defaultbookname', 'local_scorm_maker_import'), $book->name);
     }
 }

@@ -26,6 +26,8 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['bookintro'] = 'Introdução';
 $string['chapterimporterror'] = 'Não foi possível criar um capítulo durante a importação do livro: {$a}.';
+$string['defaultbookname'] = 'Livro importado';
+$string['defaultscormname'] = 'SCORM importado';
 $string['invalidcourse'] = 'ID de curso inválido: {$a}.';
 $string['invaliddraftfile'] = 'A área de rascunho informada deve conter exatamente um arquivo.';
 $string['invalidscormsource'] = 'Informe exatamente um dos parâmetros "url" ou "draftitemid" (não ambos, nem nenhum).';
@@ -34,6 +36,7 @@ $string['invalidzip'] = 'O arquivo baixado não é um arquivo ZIP válido.';
 $string['nobookmodule'] = 'O módulo de atividade Livro (mod_book) não está instalado ou está desabilitado neste site.';
 $string['nomanifest'] = 'O arquivo ZIP não contém um arquivo imsmanifest.xml na raiz.';
 $string['noscormmodule'] = 'O módulo de atividade SCORM (mod_scorm) não está instalado ou está desabilitado neste site.';
+$string['packagetoolarge'] = 'O pacote é maior que o tamanho máximo de upload permitido neste curso ({$a}).';
 $string['pluginname'] = 'Scorm Maker Import';
 $string['privacy:metadata'] = 'O plugin Scorm Maker Import não armazena nenhum dado pessoal. Ele cria atividades SCORM e Livro em nome do usuário do web service que fez a chamada, mas os dados pertencentes a essas atividades são descritos pelos próprios provedores de privacidade desses módulos.';
 $string['scormdownloaderror'] = 'Não foi possível baixar o pacote SCORM da URL informada: {$a}.';

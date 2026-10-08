@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Lógica de importação de Livro do plugin local_scorm_maker_import.
+ * Book import logic for the local_scorm_maker_import plugin.
  *
  * @package   local_scorm_maker_import
  * @copyright 2024 ScormMaker.com.br
@@ -29,16 +29,16 @@ use moodle_exception;
 use stdClass;
 
 /**
- * Cria uma atividade Livro e divide um bloco de HTML em capítulos pelas tags <h1>.
+ * Creates a Book activity and splits a block of HTML into chapters at its <h1> tags.
  *
-     * @copyright 2024 ScormMaker.com.br
+ * @copyright 2024 ScormMaker.com.br
  * @license   https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class book_importer {
     /**
-     * Verifica se o mod_book está instalado e habilitado neste site.
+     * Checks that mod_book is installed and enabled on this site.
      *
-     * @throws moodle_exception se o mod_book estiver ausente ou desabilitado.
+     * @throws moodle_exception if mod_book is missing or disabled.
      */
     public static function require_book_module_available(): void {
         global $DB;
@@ -50,13 +50,13 @@ class book_importer {
     }
 
     /**
-     * Cria uma atividade Livro no curso informado.
+     * Creates a Book activity in the given course.
      *
-     * @param stdClass $course Registro do curso.
-     * @param string $name Nome do livro.
-     * @param string $description Introdução do livro (HTML).
-     * @param int $sectionnum Número da seção onde a atividade será colocada.
-     * @return stdClass Objeto com ->bookid e ->cmid.
+     * @param stdClass $course Course record.
+     * @param string $name Book name.
+     * @param string $description Book introduction (HTML).
+     * @param int $sectionnum Number of the section where the activity will be placed.
+     * @return stdClass Object with ->bookid and ->cmid.
      */
     public static function create_book_activity(stdClass $course, string $name, string $description, int $sectionnum): stdClass {
         global $CFG;
@@ -91,14 +91,14 @@ class book_importer {
     }
 
     /**
-     * Divide um bloco de HTML em capítulos delimitados por tags <h1>.
+     * Splits a block of HTML into chapters delimited by <h1> tags.
      *
-     * O conteúdo antes do primeiro <h1> (se houver) vira um capítulo "Introduction".
-     * Se nenhum <h1> for encontrado, todo o conteúdo vira um único capítulo.
+     * Any content before the first <h1> becomes an "Introduction" chapter.
+     * If no <h1> is found, the whole content becomes a single chapter.
      *
-     * @param string $htmlcontent Conteúdo HTML completo do livro.
-     * @param string $defaulttitle Título a usar no capítulo único quando nenhum <h1> for encontrado.
-     * @return array Lista de ['title' => string, 'content' => string], na ordem de leitura.
+     * @param string $htmlcontent Full HTML content of the book.
+     * @param string $defaulttitle Title for the single chapter used when no <h1> is found.
+     * @return array List of ['title' => string, 'content' => string], in reading order.
      */
     public static function split_html_by_h1(string $htmlcontent, string $defaulttitle): array {
         $matches = [];
@@ -143,13 +143,13 @@ class book_importer {
     }
 
     /**
-     * Cria os capítulos do livro descritos por split_html_by_h1(), na ordem.
+     * Creates the book chapters described by split_html_by_h1(), in order.
      *
-     * @param stdClass $book Registro do livro (precisa de ->id).
-     * @param context_module $context Contexto de módulo do livro.
-     * @param array $chapters Lista de ['title' => string, 'content' => string].
-     * @return int[] Ids dos capítulos criados, na ordem de criação.
-     * @throws moodle_exception se algum capítulo não puder ser criado.
+     * @param stdClass $book Book record (must have ->id).
+     * @param context_module $context Module context of the book.
+     * @param array $chapters List of ['title' => string, 'content' => string].
+     * @return int[] Ids of the created chapters, in creation order.
+     * @throws moodle_exception if any chapter cannot be created.
      */
     public static function create_chapters(stdClass $book, context_module $context, array $chapters): array {
         global $DB;

@@ -15,7 +15,7 @@ curl -sS "${WWWROOT}/webservice/rest/server.php" \
   --data-urlencode "wsfunction=local_scorm_maker_import_import_book_from_html" \
   --data-urlencode "moodlewsrestformat=json" \
   --data-urlencode "courseid=${COURSEID}" \
-  --data-urlencode "name=Livro de Teste" \
-  --data-urlencode "description=<p>Importado via script de teste.</p>" \
+  --data-urlencode "name=Test book" \
+  --data-urlencode "description=<p>Imported by the test script.</p>" \
   --data-urlencode "htmlcontent@${HTMLFILE}"
 echo

@@ -1,25 +1,25 @@
-# Sistema operacional
+# Operating system
 .DS_Store
 Thumbs.db
 
-# Editores
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Dependências e ferramentas PHP
+# PHP dependencies and tools
 /vendor/
 .phpunit.result.cache
 .phpunit.cache/
 coverage/
 *.log
 
-# Configurações locais
+# Local configuration
 .env
 .env.*
 config.php
 moodledata/
 
-# Pacotes gerados
+# Generated packages
 *.zip

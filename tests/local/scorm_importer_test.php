@@ -15,29 +15,30 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Testes da classe scorm_importer.
+ * Tests for the scorm_importer class.
  *
  * @package    local_scorm_maker_import
  * @category   test
  * @copyright  2024 ScormMaker.com.br
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_scorm_maker_import\local\scorm_importer
  */
 
 namespace local_scorm_maker_import\local;
 
 /**
- * Testes da classe scorm_importer.
+ * Tests for the scorm_importer class.
+ *
+ * @covers \local_scorm_maker_import\local\scorm_importer
  */
 final class scorm_importer_test extends \advanced_testcase {
     /**
-     * Verifica que chamar $callback lança uma moodle_exception com o errorcode informado.
+     * Asserts that calling $callback throws a moodle_exception with the given errorcode.
      *
-     * moodle_exception renderiza sua mensagem a partir de uma string de idioma, então o
-     * errorcode não faz parte do texto da mensagem e precisa ser verificado via a propriedade ->errorcode.
+     * moodle_exception renders its message from a language string, so the errorcode is not
+     * part of the message text and must be checked through the ->errorcode property.
      *
-     * @param string $expectedcode Errorcode esperado em moodle_exception::$errorcode.
-     * @param callable $callback Código que deve lançar a exceção.
+     * @param string $expectedcode Expected errorcode in moodle_exception::$errorcode.
+     * @param callable $callback Code that must throw the exception.
      */
     private function assert_throws_errorcode(string $expectedcode, callable $callback): void {
         try {
@@ -111,20 +112,20 @@ final class scorm_importer_test extends \advanced_testcase {
         $this->resetAfterTest();
 
         $this->assert_throws_errorcode('invalidscormurl', function (): void {
-            scorm_importer::download_to_temp('ftp://scormmaker.com.br/package.zip');
+            scorm_importer::download_to_temp('ftp://scormmaker.com.br/package.zip', 1048576);
         });
     }
 
     public function test_validate_download_url_accepts_allowed_https_origin(): void {
-        scorm_importer::validate_download_url('https://scormmaker.com.br/pacotes/curso.zip');
+        scorm_importer::validate_download_url('https://scormmaker.com.br/packages/course.zip');
         $this->assertTrue(true);
     }
 
     /**
-     * Verifica que a URL remota fica limitada ao HTTPS e ao host autorizado exato.
+     * Asserts that the remote URL is restricted to HTTPS and the exact allowed host.
      *
      * @dataProvider disallowed_download_url_provider
-     * @param string $url URL que deve ser rejeitada.
+     * @param string $url URL that must be rejected.
      */
     public function test_validate_download_url_rejects_urls_outside_allowed_origin(string $url): void {
         $this->assert_throws_errorcode('invalidscormurl', function () use ($url): void {
@@ -133,7 +134,7 @@ final class scorm_importer_test extends \advanced_testcase {
     }
 
     /**
-     * Fornece URLs que não pertencem à origem autorizada.
+     * Provides URLs that do not belong to the allowed origin.
      *
      * @return array<string, array{string}>
      */
@@ -165,7 +166,7 @@ final class scorm_importer_test extends \advanced_testcase {
             'filename'  => 'package.zip',
         ], $CFG->dirroot . '/mod/scorm/tests/packages/singlescobasic.zip');
 
-        $stagedpath = scorm_importer::stage_file_from_draft($draftitemid);
+        $stagedpath = scorm_importer::stage_file_from_draft($draftitemid, 1048576);
 
         $this->assertFileExists($stagedpath);
         scorm_importer::validate_manifest($stagedpath);
@@ -179,7 +180,7 @@ final class scorm_importer_test extends \advanced_testcase {
         $emptydraftitemid = file_get_unused_draft_itemid();
 
         $this->assert_throws_errorcode('invaliddraftfile', function () use ($emptydraftitemid): void {
-            scorm_importer::stage_file_from_draft($emptydraftitemid);
+            scorm_importer::stage_file_from_draft($emptydraftitemid, 1048576);
         });
     }
 
@@ -203,5 +204,60 @@ final class scorm_importer_test extends \advanced_testcase {
         $cm = get_coursemodule_from_id('scorm', $result->cmid, $course->id, false, MUST_EXIST);
         $this->assertEquals($result->scormid, $cm->instance);
         $this->assertSame('', $cm->idnumber);
+    }
+
+    public function test_delete_temp_file_ignores_missing_file(): void {
+        scorm_importer::delete_temp_file('');
+        scorm_importer::delete_temp_file(make_request_directory() . '/missing.zip');
+        $this->assertTrue(true);
+    }
+
+    public function test_stage_file_from_draft_rejects_file_above_limit(): void {
+        global $CFG, $USER;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $source = $CFG->dirroot . '/mod/scorm/tests/packages/singlescobasic.zip';
+        $draftitemid = file_get_unused_draft_itemid();
+        get_file_storage()->create_file_from_pathname([
+            'component' => 'user',
+            'filearea'  => 'draft',
+            'contextid' => \context_user::instance($USER->id)->id,
+            'itemid'    => $draftitemid,
+            'filepath'  => '/',
+            'filename'  => 'package.zip',
+        ], $source);
+
+        $this->assert_throws_errorcode('packagetoolarge', function () use ($draftitemid, $source): void {
+            scorm_importer::stage_file_from_draft($draftitemid, filesize($source) - 1);
+        });
+    }
+
+    public function test_require_size_within_limit(): void {
+        scorm_importer::require_size_within_limit(100, 100);
+
+        $this->assert_throws_errorcode('packagetoolarge', function (): void {
+            scorm_importer::require_size_within_limit(101, 100);
+        });
+    }
+
+    public function test_progress_limiter_aborts_only_above_limit(): void {
+        $limiter = scorm_importer::progress_limiter(100);
+
+        $this->assertSame(0, $limiter(null, 0, 0));
+        $this->assertSame(0, $limiter(null, 100, 100));
+        $this->assertSame(1, $limiter(null, 101, 0), 'Declared size above the limit.');
+        $this->assertSame(1, $limiter(null, 0, 101), 'Undeclared size, downloaded bytes above the limit.');
+    }
+
+    public function test_max_package_bytes_follows_course_limit(): void {
+        $this->resetAfterTest();
+
+        set_config('maxbytes', 0);
+        $course = $this->getDataGenerator()->create_course(['maxbytes' => 1024]);
+        $this->assertSame(1024, scorm_importer::max_package_bytes($course));
+
+        set_config('maxbytes', 512);
+        $this->assertSame(512, scorm_importer::max_package_bytes($course));
     }
 }

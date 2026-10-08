@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Metadados de versão do plugin local_scorm_maker_import.
+ * Version metadata for the local_scorm_maker_import plugin.
  *
  * @package   local_scorm_maker_import
  * @copyright 2024 ScormMaker.com.br
@@ -24,13 +24,13 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version    = 2026091401;
-$plugin->requires   = 2022112800; // Moodle 4.0.
+$plugin->version    = 2026100800;
+$plugin->requires   = 2024100700; // Moodle 4.5.
 $plugin->supported  = [405, 502]; // Moodle 4.5 through 5.2.
 $plugin->component  = 'local_scorm_maker_import';
 $plugin->maturity   = MATURITY_STABLE;
-$plugin->release    = '1.2.4';
+$plugin->release    = '1.2.5';
 $plugin->dependencies = [
-    'mod_scorm' => 2022112800,
-    'mod_book'  => 2022112800,
+    'mod_scorm' => 2024100700,
+    'mod_book'  => 2024100700,
 ];

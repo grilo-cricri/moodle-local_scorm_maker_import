@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Lógica de importação de pacotes SCORM do plugin local_scorm_maker_import.
+ * SCORM package import logic for the local_scorm_maker_import plugin.
  *
  * @package   local_scorm_maker_import
  * @copyright 2024 ScormMaker.com.br
@@ -28,9 +28,9 @@ use moodle_exception;
 use stdClass;
 
 /**
- * Baixa um pacote SCORM (a partir de uma URL ou de uma área de rascunho) e cria a atividade a partir dele.
+ * Gets a SCORM package (from a URL or a draft area), validates it and creates the activity from it.
  *
-     * @copyright 2024 ScormMaker.com.br
+ * @copyright 2024 ScormMaker.com.br
  * @license   https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class scorm_importer {
@@ -43,10 +43,16 @@ class scorm_importer {
     /** @var int Port permitted for remote SCORM package downloads. */
     private const ALLOWED_DOWNLOAD_PORT = 443;
 
+    /** @var int cURL error returned when a declared Content-Length exceeds CURLOPT_MAXFILESIZE. */
+    private const CURLE_FILESIZE_EXCEEDED = 63;
+
+    /** @var int cURL error returned when the progress callback aborts the transfer. */
+    private const CURLE_ABORTED_BY_CALLBACK = 42;
+
     /**
-     * Verifica se o mod_scorm está instalado e habilitado neste site.
+     * Checks that mod_scorm is installed and enabled on this site.
      *
-     * @throws moodle_exception se o mod_scorm estiver ausente ou desabilitado.
+     * @throws moodle_exception if mod_scorm is missing or disabled.
      */
     public static function require_scorm_module_available(): void {
         global $DB;
@@ -58,32 +64,37 @@ class scorm_importer {
     }
 
     /**
-     * Garante que o diretório temporário de trabalho do plugin exista e retorna seu caminho.
+     * Returns the largest package size accepted for the given course.
      *
-     * @param string $erroronfailure Código de erro do arquivo de idioma deste plugin a lançar
-     *     se o diretório não puder ser criado.
-     * @return string Caminho absoluto do diretório temporário.
-     * @throws moodle_exception se o diretório não puder ser criado.
+     * This is the same limit a teacher gets when uploading a package through the activity form: the site and course
+     * maximum upload sizes, capped by the PHP upload limits.
+     *
+     * @param stdClass $course Course record.
+     * @return int Maximum size in bytes.
      */
-    protected static function ensure_temp_dir(string $erroronfailure): string {
+    public static function max_package_bytes(stdClass $course): int {
         global $CFG;
 
-        $tempsubdir = $CFG->tempdir . '/scorm_maker_import';
-        if (!is_dir($tempsubdir) && !mkdir($tempsubdir, $CFG->directorypermissions, true) && !is_dir($tempsubdir)) {
-            throw new moodle_exception($erroronfailure, 'local_scorm_maker_import');
-        }
-
-        return $tempsubdir;
+        return (int) get_max_upload_file_size($CFG->maxbytes, $course->maxbytes ?? 0);
     }
 
     /**
-     * Verifica se a URL remota pertence exatamente à origem autorizada.
+     * Returns the path of a new, unique temporary ZIP file inside a request directory.
      *
-     * A comparação do host é exata de propósito: subdomínios, hosts com sufixo
-     * parecido, credenciais embutidas e portas alternativas não são permitidos.
+     * @return string Absolute path of the (not yet created) temporary file.
+     */
+    protected static function new_temp_path(): string {
+        return make_request_directory() . '/' . uniqid('package_', true) . '.zip';
+    }
+
+    /**
+     * Checks that the remote URL belongs exactly to the authorised origin.
      *
-     * @param string $url URL a validar.
-     * @throws moodle_exception se a URL não usar a origem autorizada.
+     * The host comparison is exact on purpose: subdomains, look-alike host suffixes, embedded credentials and
+     * alternative ports are not allowed.
+     *
+     * @param string $url URL to validate.
+     * @throws moodle_exception if the URL does not use the authorised origin.
      */
     public static function validate_download_url(string $url): void {
         $parts = parse_url($url);
@@ -107,30 +118,46 @@ class scorm_importer {
     }
 
     /**
-     * Baixa um arquivo ZIP remoto para um arquivo único dentro de $CFG->tempdir.
+     * Rejects a package larger than the allowed size.
      *
-     * @param string $url URL HTTPS do pacote ZIP no host autorizado.
-     * @return string Caminho absoluto do arquivo temporário baixado.
-     * @throws moodle_exception se o download falhar por qualquer motivo.
+     * @param int $size Size of the package in bytes.
+     * @param int $maxbytes Maximum size in bytes (see max_package_bytes()).
+     * @throws moodle_exception packagetoolarge if $size is above $maxbytes.
      */
-    public static function download_to_temp(string $url): string {
+    public static function require_size_within_limit(int $size, int $maxbytes): void {
+        if ($size > $maxbytes) {
+            throw new moodle_exception('packagetoolarge', 'local_scorm_maker_import', '', display_size($maxbytes));
+        }
+    }
+
+    /**
+     * Downloads a remote ZIP file into a unique temporary file.
+     *
+     * The transfer stops as soon as it goes over $maxbytes, whether or not the server sends a Content-Length header.
+     *
+     * @param string $url HTTPS URL of the ZIP package on the authorised host.
+     * @param int $maxbytes Maximum size of the package in bytes (see max_package_bytes()).
+     * @return string Absolute path of the downloaded temporary file.
+     * @throws moodle_exception if the package is too large or the download fails for any other reason.
+     */
+    public static function download_to_temp(string $url, int $maxbytes): string {
         global $CFG;
+        require_once($CFG->libdir . '/filelib.php');
 
         self::validate_download_url($url);
 
-        $tempsubdir = self::ensure_temp_dir('scormdownloaderror');
-        $tempfile = $tempsubdir . '/' . uniqid('scorm_', true) . '.zip';
+        $tempfile = self::new_temp_path();
 
         $filehandle = fopen($tempfile, 'wb');
         if ($filehandle === false) {
-            self::delete_temp_file($tempfile);
             throw new moodle_exception('scormdownloaderror', 'local_scorm_maker_import', '', $url);
         }
 
         $curl = new \curl();
         try {
-            // Redirecionamentos ficam desabilitados.
-            // Isso impede que a origem autorizada encaminhe o servidor Moodle para outro host.
+            // Redirects are disabled so the authorised origin cannot send the Moodle server to another host.
+            // CURLOPT_MAXFILESIZE refuses a declared Content-Length above the limit before the body is written, and
+            // the progress callback aborts chunked or undeclared transfers as soon as they go over it.
             $curl->get($url, null, [
                 'CURLOPT_SSL_VERIFYPEER' => true,
                 'CURLOPT_SSL_VERIFYHOST' => 2,
@@ -141,6 +168,9 @@ class scorm_importer {
                 'CURLOPT_RETURNTRANSFER' => true,
                 'CURLOPT_NOBODY' => false,
                 'CURLOPT_FILE' => $filehandle,
+                'CURLOPT_MAXFILESIZE' => $maxbytes,
+                'CURLOPT_NOPROGRESS' => false,
+                'CURLOPT_PROGRESSFUNCTION' => self::progress_limiter($maxbytes),
             ]);
         } finally {
             fclose($filehandle);
@@ -148,10 +178,19 @@ class scorm_importer {
 
         @chmod($tempfile, $CFG->filepermissions);
 
+        $errno = $curl->get_errno();
+        $toolarge = $errno === self::CURLE_FILESIZE_EXCEEDED
+            || $errno === self::CURLE_ABORTED_BY_CALLBACK
+            || (is_readable($tempfile) && filesize($tempfile) > $maxbytes);
+        if ($toolarge) {
+            self::delete_temp_file($tempfile);
+            throw new moodle_exception('packagetoolarge', 'local_scorm_maker_import', '', display_size($maxbytes));
+        }
+
         $info = $curl->get_info();
         $status = is_array($info) ? (int) ($info['http_code'] ?? 0) : 0;
 
-        if ($curl->get_errno() !== 0 || $status !== 200 || !is_readable($tempfile)) {
+        if ($errno !== 0 || $status !== 200 || !is_readable($tempfile)) {
             self::delete_temp_file($tempfile);
             throw new moodle_exception('scormdownloaderror', 'local_scorm_maker_import', '', $url);
         }
@@ -160,18 +199,30 @@ class scorm_importer {
     }
 
     /**
-     * Copia o único arquivo encontrado na área de rascunho de um usuário para um arquivo único dentro de $CFG->tempdir.
+     * Builds the cURL progress callback that aborts a download once it goes over the size limit.
      *
-     * Usado como alternativa a download_to_temp() quando o chamador enviou o ZIP do SCORM diretamente via
-     * /webservice/upload.php, em vez de apontar para uma URL HTTPS autorizada. Áreas de rascunho sempre pertencem ao
-     * contexto do próprio usuário atual ($USER), portanto isso não pode ser usado para acessar arquivos de
-     * outro usuário.
-     *
-     * @param int $draftitemid Id da área de rascunho (item id) retornado por /webservice/upload.php.
-     * @return string Caminho absoluto do arquivo temporário copiado.
-     * @throws moodle_exception se a área de rascunho estiver vazia ou contiver mais de um arquivo.
+     * @param int $maxbytes Maximum size of the package in bytes.
+     * @return callable Callback for CURLOPT_PROGRESSFUNCTION; a non-zero return aborts the transfer.
      */
-    public static function stage_file_from_draft(int $draftitemid): string {
+    public static function progress_limiter(int $maxbytes): callable {
+        return static function ($handle, $downloadtotal, $downloaded) use ($maxbytes): int {
+            return ($downloadtotal > $maxbytes || $downloaded > $maxbytes) ? 1 : 0;
+        };
+    }
+
+    /**
+     * Copies the only file found in the current user's draft area into a unique temporary file.
+     *
+     * Used instead of download_to_temp() when the caller uploaded the ZIP through /webservice/upload.php rather than
+     * pointing to an authorised HTTPS URL. Draft areas always belong to the current user's own context ($USER), so
+     * this cannot be used to read another user's files.
+     *
+     * @param int $draftitemid Draft area item id returned by /webservice/upload.php.
+     * @param int $maxbytes Maximum size of the package in bytes (see max_package_bytes()).
+     * @return string Absolute path of the copied temporary file.
+     * @throws moodle_exception if the draft area is empty, holds more than one file, or the file is too large.
+     */
+    public static function stage_file_from_draft(int $draftitemid, int $maxbytes): string {
         global $USER;
 
         $usercontext = \context_user::instance($USER->id);
@@ -182,18 +233,20 @@ class scorm_importer {
             throw new moodle_exception('invaliddraftfile', 'local_scorm_maker_import');
         }
 
-        $tempsubdir = self::ensure_temp_dir('invaliddraftfile');
-        $tempfile = $tempsubdir . '/' . uniqid('scorm_', true) . '.zip';
-        reset($files)->copy_content_to($tempfile);
+        $file = reset($files);
+        self::require_size_within_limit((int) $file->get_filesize(), $maxbytes);
+
+        $tempfile = self::new_temp_path();
+        $file->copy_content_to($tempfile);
 
         return $tempfile;
     }
 
     /**
-     * Confirma que o ZIP no caminho informado contém o arquivo imsmanifest.xml na raiz.
+     * Confirms that the ZIP at the given path contains an imsmanifest.xml file at its root.
      *
-     * @param string $zippath Caminho absoluto do arquivo ZIP baixado.
-     * @throws moodle_exception se o arquivo não for um ZIP válido ou não tiver o manifesto na raiz.
+     * @param string $zippath Absolute path of the downloaded ZIP file.
+     * @throws moodle_exception if the file is not a valid ZIP or has no manifest at its root.
      */
     public static function validate_manifest(string $zippath): void {
         $zip = new \ZipArchive();
@@ -202,7 +255,7 @@ class scorm_importer {
             throw new moodle_exception('invalidzip', 'local_scorm_maker_import');
         }
 
-        // FL_NODIR é omitido de propósito: o manifesto precisa estar na raiz do arquivo, não em uma subpasta.
+        // FL_NODIR is deliberately omitted: the manifest must be at the archive root, not in a subfolder.
         $hasmanifest = $zip->locateName('imsmanifest.xml', \ZipArchive::FL_NOCASE) !== false;
         $zip->close();
 
@@ -212,9 +265,9 @@ class scorm_importer {
     }
 
     /**
-     * Apaga o arquivo temporário baixado, ignorando arquivos inexistentes.
+     * Deletes a temporary file, ignoring files that do not exist.
      *
-     * @param string $path Caminho absoluto do arquivo temporário.
+     * @param string $path Absolute path of the temporary file.
      */
     public static function delete_temp_file(string $path): void {
         if ($path !== '' && file_exists($path)) {
@@ -223,13 +276,13 @@ class scorm_importer {
     }
 
     /**
-     * Cria uma atividade SCORM no curso informado a partir de um arquivo ZIP local.
+     * Creates a SCORM activity in the given course from a local ZIP file.
      *
-     * @param stdClass $course Registro do curso.
-     * @param string $zippath Caminho absoluto do arquivo ZIP já validado.
-     * @param string $name Nome da atividade.
-     * @param int $sectionnum Número da seção onde a atividade será colocada.
-     * @return stdClass Objeto com ->scormid e ->cmid.
+     * @param stdClass $course Course record.
+     * @param string $zippath Absolute path of the already validated ZIP file.
+     * @param string $name Activity name.
+     * @param int $sectionnum Number of the section where the activity will be placed.
+     * @return stdClass Object with ->scormid and ->cmid.
      */
     public static function create_scorm_activity(stdClass $course, string $zippath, string $name, int $sectionnum): stdClass {
         global $CFG, $USER;

@@ -1,5 +1,26 @@
 # Changes — local_scorm_maker_import
 
+## 1.2.5 (2026-10-08) — version 2026100800
+Changes requested by the Moodle Plugins Directory review.
+- Added: `LICENSE` file (GNU GPL v3) in the plugin root.
+- Changed: temporary package files are created with `make_request_directory()`
+  instead of a hand-made directory under `$CFG->tempdir`.
+- Added: SCORM packages are limited to the course upload size,
+  `get_max_upload_file_size($CFG->maxbytes, $course->maxbytes)`, the same
+  limit as the activity form. Downloads set `CURLOPT_MAXFILESIZE` and stop
+  from a progress callback once over the limit; draft files are checked
+  before copying. New error `packagetoolarge`.
+- Changed: `$plugin->requires` and the `mod_scorm` / `mod_book` dependencies
+  raised to `2024100700` (Moodle 4.5), matching `$plugin->supported`: the
+  code uses `core_external` (Moodle 4.2+) and PHP 8 syntax.
+- Changed: the `name` parameter of both functions now defaults to `''`; an
+  empty name uses the new `defaultscormname` / `defaultbookname` language
+  strings instead of the hard-coded Portuguese names.
+- Docs: README in English (Portuguese kept as `README.pt_br.md`); code
+  comments and PHPDoc translated to English; screenshots in
+  `docs/screenshots/`.
+- CI: GitHub Actions workflow running moodle-plugin-ci on Moodle 4.5–5.2.
+
 ## 1.2.4 (2026-09-14) — version 2026091401
 - Maintenance: incremented the plugin build number for the Moodle Marketplace
   resubmission. No functional changes.

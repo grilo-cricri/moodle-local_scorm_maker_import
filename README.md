@@ -1,89 +1,107 @@
 # Scorm Maker Import (local_scorm_maker_import)
 
-Plugin local que expõe duas funções de web service autenticadas por token,
-permitindo que sistemas externos criem conteúdo em cursos do Moodle sem
-intervenção manual de um professor:
+*[Versão em português](README.pt_br.md)*
 
-- **Importar um pacote SCORM** a partir de uma URL HTTPS autorizada em
-  `https://scormmaker.com.br` **ou** de um arquivo enviado diretamente
-  (upload).
-- **Importar um Livro** (`mod_book`) a partir de um bloco de HTML, dividido
-  automaticamente em capítulos pela tag `<h1>`.
+Local plugin that exposes two token-authenticated web service functions,
+letting external systems create content in Moodle courses without a teacher
+doing it by hand:
 
-## Funcionalidades
+- **Import a SCORM package** from an authorised HTTPS URL on
+  `https://scormmaker.com.br` **or** from a file uploaded directly.
+- **Import a Book** (`mod_book`) from a block of HTML, split automatically
+  into chapters at the `<h1>` tags.
 
-- `local_scorm_maker_import_import_scorm_from_url` — baixa um pacote SCORM
-  (.zip) somente de `https://scormmaker.com.br` (host exato), **ou** usa um
-  arquivo já enviado via `/webservice/upload.php` (ver seção "Uso" abaixo);
-  valida que o ZIP contém `imsmanifest.xml` na raiz e cria a atividade SCORM
-  no curso/seção informados.
-- `local_scorm_maker_import_import_book_from_html` — cria uma atividade
-  Livro a partir de um bloco de HTML, dividindo-o automaticamente em um
-  capítulo por seção `<h1>` (texto antes do primeiro `<h1>` vira o capítulo
-  "Introduction"; se não houver nenhum `<h1>`, todo o conteúdo vira um único
-  capítulo).
-- As duas funções reconferem a capability `moodle/course:manageactivities` no
-  `execute()`, independentemente do que está declarado em `db/services.php` —
-  ou seja, mesmo que o token tenha acesso ao serviço, o usuário por trás dele
-  precisa ser professor/gestor no curso de destino.
+## Screenshots
 
-## Requisitos
+The plugin has no user interface of its own; these show its service and the
+activities it creates (Moodle 4.5):
 
-- Moodle 4.0 ou superior (`$plugin->requires = 2022112800`).
-- A versão 1.2.4 declara suporte às séries Moodle 4.5 até 5.2; essa faixa foi
-  verificada com a suíte PHPUnit em Moodle 4.5.14 e Moodle 5.2.3.
-- `mod_scorm` habilitado no site, para usar o endpoint de importação de SCORM.
-- `mod_book` habilitado no site, para usar o endpoint de importação de Livro.
-- Extensão PHP `ext-zip` (já exigida pelo próprio Moodle) para validar o ZIP.
-- Para a opção `url`, o pacote precisa estar disponível por HTTPS no host exato
-  `scormmaker.com.br`.
+- [External service functions](docs/screenshots/01-external-service-functions.png)
+- [Course with the imported SCORM and Book activities](docs/screenshots/02-course-with-imported-activities.png)
+- [Imported SCORM package in the player](docs/screenshots/03-imported-scorm-player.png)
+- [Imported Book, one chapter per `<h1>`](docs/screenshots/04-imported-book-chapter.png)
 
-## Instalação
+## Features
 
-1. Copie este plugin para `local/scorm_maker_import`.
-2. Acesse *Administração do site → Notificações* (ou rode
-   `php admin/cli/upgrade.php --non-interactive`) para concluir a instalação.
-3. Habilite os web services e o protocolo REST em *Administração do site →
-   Servidor → Web services*, caso ainda não estejam habilitados.
-4. Em *Administração do site → Servidor → Web services → Serviços externos*,
-   habilite o serviço **Scorm Maker Import** (ele vem desabilitado por
-   padrão) e adicione os usuários/papéis autorizados a chamá-lo.
-5. Gere um token de web service para um usuário autorizado em *Administração
-   do site → Servidor → Web services → Gerenciar tokens*.
+- `local_scorm_maker_import_import_scorm_from_url` — downloads a SCORM
+  package (.zip) only from `https://scormmaker.com.br` (exact host), **or**
+  uses a file already uploaded through `/webservice/upload.php` (see "Usage"
+  below); checks that the ZIP has `imsmanifest.xml` at its root and creates
+  the SCORM activity in the given course/section.
+- `local_scorm_maker_import_import_book_from_html` — creates a Book activity
+  from a block of HTML, split automatically into one chapter per `<h1>`
+  section (text before the first `<h1>` becomes the "Introduction" chapter;
+  without any `<h1>`, the whole content becomes a single chapter).
+- Packages are held to the course upload limit, the same one a teacher gets
+  in the activity form.
+- Both functions re-check the `moodle/course:manageactivities`
+  capability inside `execute()`, whatever `db/services.php` declares — even
+  when the token has access to the service, the user behind it must be a
+  teacher/manager in the target course.
 
-Se você já tinha instalado a versão 1.0 deste plugin (antes do suporte a
-upload direto), rode o upgrade novamente (passo 2) — é isso que aplica a
-permissão de upload de arquivos (`uploadfiles`) ao serviço já existente.
+## Requirements
 
-## Configuração
+- Moodle 4.5 or later (`$plugin->requires = 2024100700`). Supported Moodle
+  branches: 4.5 through 5.2 (`$plugin->supported = [405, 502]`), checked with
+  the PHPUnit suite on Moodle 4.5.
+- `mod_scorm` enabled on the site, to use the SCORM import function.
+- `mod_book` enabled on the site, to use the Book import function.
+- PHP extension `ext-zip` (already required by Moodle) to validate the ZIP.
+- For the `url` option, the package must be available over HTTPS on the exact
+  host `scormmaker.com.br`.
 
-Este plugin não tem `settings.php` — não há nada para configurar além da
-configuração padrão de web service acima (habilitar o serviço e emitir
-tokens).
+## Installation
 
-## Uso
+1. Copy this plugin to `local/scorm_maker_import`.
+2. Go to *Site administration → Notifications* (or run
+   `php admin/cli/upgrade.php --non-interactive`) to finish the installation.
+3. Enable web services and the REST protocol in *Site administration →
+   Server → Web services*, if they are not enabled yet.
+4. In *Site administration → Server → Web services → External services*,
+   enable the **Scorm Maker Import** service (it is disabled by default) and
+   add the users authorised to call it.
+5. Create a web service token for an authorised user in *Site
+   administration → Server → Web services → Manage tokens*.
 
-Todas as chamadas abaixo usam o protocolo REST clássico do Moodle
-(`/webservice/rest/server.php`) com `moodlewsrestformat=json`. Substitua
-`$WWWROOT` pela URL do seu site e `$TOKEN` pelo token gerado no passo 5 da
-instalação.
+If you had version 1.0 of this plugin installed (before direct upload was
+supported), run the upgrade again (step 2) — that is what applies the file
+upload permission (`uploadfiles`) to the existing service.
 
-### 1. Importar SCORM a partir de uma URL HTTPS autorizada
+## Configuration
 
-**Função:** `local_scorm_maker_import_import_scorm_from_url`
+This plugin has no `settings.php` — there is nothing to configure beyond the
+standard web service setup above (enable the service and issue tokens).
 
-| Parâmetro | Tipo | Obrigatório | Padrão | Descrição |
+The largest accepted package is the course upload limit:
+`get_max_upload_file_size($CFG->maxbytes, $course->maxbytes)`, which is also
+capped by the PHP `upload_max_filesize` and `post_max_size` settings. Raise
+*Site administration → Security → Site security settings → Maximum uploaded
+file size* and the course *Maximum upload size* (and the PHP limits) if your
+packages are larger.
+
+## Usage
+
+All calls below use Moodle's classic REST protocol
+(`/webservice/rest/server.php`) with `moodlewsrestformat=json`. Replace
+`$WWWROOT` with your site URL and `$TOKEN` with the token created in step 5
+of the installation.
+
+### 1. Import SCORM from an authorised HTTPS URL
+
+**Function:** `local_scorm_maker_import_import_scorm_from_url`
+
+| Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `courseid` | inteiro | Sim | — | ID do curso onde a atividade será criada. |
-| `url` | URL | Ver nota¹ | `''` | URL HTTPS do arquivo `.zip` no host exato `scormmaker.com.br`. |
-| `name` | texto | Não | `SCORM importado` | Nome da atividade. |
-| `sectionnum` | inteiro | Não | `0` | Número da seção do curso (0 = seção geral). |
-| `draftitemid` | inteiro | Ver nota¹ | `0` | Alternativa a `url` — ver "Importar SCORM via upload direto" abaixo. |
+| `courseid` | integer | Yes | — | Id of the course where the activity is created. |
+| `url` | URL | See note¹ | `''` | HTTPS URL of the `.zip` file on the exact host `scormmaker.com.br`. |
+| `name` | text | No | `''` | Name of the activity. Empty uses the `defaultscormname` language string ("Imported SCORM package" in English). |
+| `sectionnum` | integer | No | `0` | Course section number (0 = general section). |
+| `draftitemid` | integer | See note¹ | `0` | Alternative to `url` — see "Import SCORM through direct upload" below. |
 
-¹ **Forneça exatamente um** entre `url` e `draftitemid` — nunca os dois,
-nunca nenhum. Fornecer ambos ou nenhum resulta em erro (`invalidscormsource`).
+¹ **Give exactly one** of `url` and `draftitemid` — never both, never
+neither. Giving both or neither results in the `invalidscormsource` error.
 
-**Retorno:**
+**Returns:**
 
 ```json
 {
@@ -93,7 +111,7 @@ nunca nenhum. Fornecer ambos ou nenhum resulta em erro (`invalidscormsource`).
 }
 ```
 
-**Exemplo (via URL):**
+**Example (by URL):**
 
 ```bash
 curl -sS "$WWWROOT/webservice/rest/server.php" \
@@ -101,73 +119,71 @@ curl -sS "$WWWROOT/webservice/rest/server.php" \
   --data-urlencode "wsfunction=local_scorm_maker_import_import_scorm_from_url" \
   --data-urlencode "moodlewsrestformat=json" \
   --data-urlencode "courseid=2" \
-  --data-urlencode "url=https://scormmaker.com.br/pacotes/curso.zip" \
-  --data-urlencode "name=Curso de Integração" \
+  --data-urlencode "url=https://scormmaker.com.br/packages/course.zip" \
+  --data-urlencode "name=Onboarding course" \
   --data-urlencode "sectionnum=1"
 ```
 
-### 2. Importar SCORM via upload direto (sem URL pública)
+### 2. Import SCORM through direct upload (no public URL)
 
-Quando o pacote SCORM não está hospedado em uma URL HTTPS autorizada acessível
-pelo servidor Moodle, envie o arquivo primeiro para a área de rascunho do
-próprio usuário do token, usando o endpoint padrão de upload do Moodle,
-`/webservice/upload.php`, e então chame `import_scorm_from_url` passando o
-`itemid` retornado no parâmetro `draftitemid` em vez de `url`:
+When the SCORM package is not hosted on an authorised HTTPS URL that the
+Moodle server can reach, first upload the file to the token user's own draft
+area with Moodle's standard upload endpoint, `/webservice/upload.php`, then
+call `import_scorm_from_url` passing the returned `itemid` in the
+`draftitemid` parameter instead of `url`:
 
 ```bash
-# Passo 1: enviar o .zip, recebendo de volta um draftitemid.
-# Atenção: o nome do campo do arquivo NÃO pode usar colchetes "[]"
-# (use "file_box=", nunca "file_box[]=") — o endpoint de upload do Moodle
-# lê $_FILES como entradas simples e interpreta mal a forma de array.
+# Step 1: upload the .zip and get a draftitemid back.
+# Note: the file field name must NOT use brackets "[]"
+# (use "file_box=", never "file_box[]=") — Moodle's upload endpoint
+# reads $_FILES as plain entries and misreads the array form.
 curl -sS "$WWWROOT/webservice/upload.php" \
   -F "token=$TOKEN" \
-  -F "file_box=@pacote.zip"
-# -> [{"itemid": 123456, "filename": "pacote.zip", ...}]
+  -F "file_box=@package.zip"
+# -> [{"itemid": 123456, "filename": "package.zip", ...}]
 
-# Passo 2: importar usando esse draftitemid em vez de url.
+# Step 2: import using that draftitemid instead of url.
 curl -sS "$WWWROOT/webservice/rest/server.php" \
   --data-urlencode "wstoken=$TOKEN" \
   --data-urlencode "wsfunction=local_scorm_maker_import_import_scorm_from_url" \
   --data-urlencode "moodlewsrestformat=json" \
   --data-urlencode "courseid=2" \
   --data-urlencode "draftitemid=123456" \
-  --data-urlencode "name=Curso Enviado por Upload"
+  --data-urlencode "name=Uploaded course"
 ```
 
-A área de rascunho (draft area) é sempre restrita ao próprio usuário do
-token — não existe forma de um chamador referenciar o arquivo enviado por
-outro usuário só adivinhando o `itemid`, a mesma garantia que qualquer
-formulário de upload do próprio Moodle já depende.
+The draft area is always restricted to the token user — a caller cannot
+reference a file uploaded by another user by guessing the `itemid`, the same
+guarantee every Moodle upload form already relies on.
 
-Esse fluxo exige que o serviço **Scorm Maker Import** tenha a permissão de
-upload de arquivos habilitada (`uploadfiles`), o que este plugin já declara
-em `db/services.php` a partir da versão 1.1. Se o site foi instalado com a
-versão 1.0, rode o upgrade uma vez (*Administração do site → Notificações*)
-para essa permissão ser aplicada ao serviço já existente.
+This flow needs the file upload permission (`uploadfiles`) on the **Scorm
+Maker Import** service, which this plugin declares in `db/services.php` since
+version 1.1. If the site was installed with version 1.0, run the upgrade once
+(*Site administration → Notifications*) to apply it to the existing service.
 
-### 3. Importar Livro a partir de HTML
+### 3. Import a Book from HTML
 
-**Função:** `local_scorm_maker_import_import_book_from_html`
+**Function:** `local_scorm_maker_import_import_book_from_html`
 
-| Parâmetro | Tipo | Obrigatório | Padrão | Descrição |
+| Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `courseid` | inteiro | Sim | — | ID do curso onde a atividade será criada. |
-| `htmlcontent` | HTML (texto bruto) | Sim | — | Conteúdo HTML completo do livro. |
-| `name` | texto | Não | `Livro importado` | Título do livro. |
-| `description` | HTML (texto bruto) | Não | `''` | Introdução/descrição do livro. |
-| `sectionnum` | inteiro | Não | `0` | Número da seção do curso (0 = seção geral). |
+| `courseid` | integer | Yes | — | Id of the course where the activity is created. |
+| `htmlcontent` | HTML (raw text) | Yes | — | Full HTML content of the book. |
+| `name` | text | No | `''` | Title of the book. Empty uses the `defaultbookname` language string ("Imported book" in English). |
+| `description` | HTML (raw text) | No | `''` | Introduction/description of the book. |
+| `sectionnum` | integer | No | `0` | Course section number (0 = general section). |
 
-**Como o HTML é dividido em capítulos:**
+**How the HTML is split into chapters:**
 
-- Cada tag `<h1>` inicia um novo capítulo; o título do capítulo é o texto do
-  `<h1>` (tags internas como `<strong>`/`<em>` são removidas, sobrando só o
-  texto puro).
-- Se houver conteúdo **antes** do primeiro `<h1>`, ele vira um capítulo
-  inicial chamado "Introduction".
-- Se **nenhum** `<h1>` for encontrado, todo o `htmlcontent` vira um único
-  capítulo, usando `name` como título.
+- Each `<h1>` tag starts a new chapter; the chapter title is the text of the
+  `<h1>` (inner tags such as `<strong>`/`<em>` are removed, leaving plain
+  text).
+- Content **before** the first `<h1>` becomes a first chapter called
+  "Introduction".
+- If **no** `<h1>` is found, the whole `htmlcontent` becomes a single
+  chapter, titled with the book name.
 
-**Retorno:**
+**Returns:**
 
 ```json
 {
@@ -177,10 +193,10 @@ para essa permissão ser aplicada ao serviço já existente.
 }
 ```
 
-`chapterids` vem na ordem de criação (capítulo de introdução, se houver,
-seguido dos capítulos na ordem em que os `<h1>` aparecem no HTML).
+`chapterids` comes in creation order (the introduction chapter, if any,
+followed by the chapters in the order their `<h1>` appear in the HTML).
 
-**Exemplo:**
+**Example:**
 
 ```bash
 curl -sS "$WWWROOT/webservice/rest/server.php" \
@@ -188,76 +204,84 @@ curl -sS "$WWWROOT/webservice/rest/server.php" \
   --data-urlencode "wsfunction=local_scorm_maker_import_import_book_from_html" \
   --data-urlencode "moodlewsrestformat=json" \
   --data-urlencode "courseid=2" \
-  --data-urlencode "name=Manual do Aluno" \
-  --data-urlencode "description=<p>Importado automaticamente.</p>" \
-  --data-urlencode "htmlcontent=<p>Texto de abertura.</p><h1>Capítulo 1</h1><p>Conteúdo...</p><h1>Capítulo 2</h1><p>Mais conteúdo...</p>"
+  --data-urlencode "name=Student handbook" \
+  --data-urlencode "description=<p>Imported automatically.</p>" \
+  --data-urlencode "htmlcontent=<p>Opening text.</p><h1>Chapter 1</h1><p>Content...</p><h1>Chapter 2</h1><p>More content...</p>"
 ```
 
-Um arquivo de exemplo pronto para testar está em
-[`tests/fixtures/sample_book.html`](tests/fixtures/sample_book.html), com um
-script auxiliar em
+A sample file ready for testing is in
+[`tests/fixtures/sample_book.html`](tests/fixtures/sample_book.html), with a
+helper script in
 [`tests/fixtures/call_import_book_from_html.sh`](tests/fixtures/call_import_book_from_html.sh).
 
-### Erros possíveis
+### Possible errors
 
-Todos os erros são retornados como uma exceção estruturada do Moodle
-(`moodle_exception` ou uma subclasse), nunca como um erro solto/HTML. Nas
-respostas REST em JSON, o campo `errorcode` identifica a causa:
+Every error is returned as a structured Moodle exception (`moodle_exception`
+or a subclass), never as a loose/HTML error. In JSON REST responses, the
+`errorcode` field identifies the cause:
 
-| `errorcode` | Endpoint(s) | Quando ocorre |
+| `errorcode` | Function(s) | When |
 |---|---|---|
-| `invalidcourse` | ambos | `courseid` não corresponde a um curso existente. |
-| `noscormmodule` | SCORM | `mod_scorm` está desinstalado ou desabilitado no site. |
-| `nobookmodule` | Livro | `mod_book` está desinstalado ou desabilitado no site. |
-| `invalidscormsource` | SCORM | Nem `url` nem `draftitemid` foram informados, ou os dois foram informados juntos. |
-| `invaliddraftfile` | SCORM | O `draftitemid` informado não aponta para uma área de rascunho com exatamente um arquivo. |
-| `invalidscormurl` | SCORM | A `url` não usa HTTPS com o host exato `scormmaker.com.br`. |
-| `scormdownloaderror` | SCORM | Falha ao baixar o ZIP da `url` autorizada (rede, HTTP diferente de 200, redirecionamento ou bloqueio pela segurança do Moodle — ver "Notas de segurança"). |
-| `invalidzip` | SCORM | O arquivo baixado/enviado não é um ZIP válido. |
-| `nomanifest` | SCORM | O ZIP não contém `imsmanifest.xml` na raiz (manifestos dentro de subpastas não contam). |
-| `chapterimporterror` | Livro | Falha ao gravar algum capítulo no banco de dados. |
-| `required_capability_exception` (core) | ambos | O usuário do token não tem `moodle/course:manageactivities` no curso informado. |
-| `invalid_parameter_exception` (core) | ambos | Algum parâmetro obrigatório está ausente ou tem tipo inválido. |
+| `invalidcourse` | all | `courseid` does not match an existing course. |
+| `noscormmodule` | SCORM | `mod_scorm` is uninstalled or disabled on the site. |
+| `nobookmodule` | Book | `mod_book` is uninstalled or disabled on the site. |
+| `invalidscormsource` | SCORM | Neither `url` nor `draftitemid` was given, or both were given together. |
+| `invaliddraftfile` | SCORM | The given `draftitemid` does not point to a draft area holding exactly one file. |
+| `invalidscormurl` | SCORM | The `url` does not use HTTPS with the exact host `scormmaker.com.br`. |
+| `packagetoolarge` | SCORM | The package (downloaded or uploaded) is larger than the course upload limit — the same as the activity form. The download stops as soon as it goes over the limit. |
+| `scormdownloaderror` | SCORM | The ZIP could not be downloaded from the authorised `url` (network, HTTP status other than 200, redirect, or blocked by Moodle's cURL security — see "Security notes"). |
+| `invalidzip` | SCORM | The downloaded/uploaded file is not a valid ZIP. |
+| `nomanifest` | SCORM | The ZIP has no `imsmanifest.xml` at its root (manifests inside subfolders do not count). |
+| `chapterimporterror` | Book | A chapter could not be saved to the database. |
+| `required_capability_exception` (core) | all | The token user does not have `moodle/course:manageactivities` in the given course. |
+| `invalid_parameter_exception` (core) | all | A required parameter is missing or has an invalid type. |
 
 ## Capabilities
 
-| Capability | O que permite | Papéis padrão |
+| Capability | What it allows | Default roles |
 |---|---|---|
-| `moodle/course:manageactivities` (do núcleo do Moodle, reaproveitada — não definida por este plugin) | Necessária, no contexto do curso de destino, para chamar qualquer uma das duas funções | Professor, Gestor |
+| `moodle/course:manageactivities` (Moodle core, reused — not defined by this plugin) | Required, in the target course context, to call either function | Teacher, Manager |
 
-Este plugin não define nenhuma capability própria.
+This plugin defines no capability of its own.
 
-## Notas de segurança
+## Security notes
 
-- O endpoint de importação de SCORM aceita uma URL remota somente quando ela
-  usa HTTPS e tem exatamente o host `scormmaker.com.br`. HTTP, subdomínios,
-  hosts parecidos, credenciais embutidas e portas diferentes da porta HTTPS
-  padrão são rejeitados antes de qualquer requisição de rede.
-- O download usa o cURL do Moodle com redirecionamentos desabilitados. Assim,
-  uma resposta de `scormmaker.com.br` não pode fazer o servidor Moodle buscar
-  um arquivo em outro host. A proteção de segurança do cURL do Moodle contra
-  endereços bloqueados continua ativa.
-- O parâmetro `draftitemid` é uma alternativa local: ele usa um arquivo enviado
-  para a área de rascunho do próprio usuário e não realiza download remoto.
-- A descrição do Livro e o HTML dos capítulos passam por `clean_text` do Moodle
-  no formato `FORMAT_HTML` antes de serem armazenados.
-- As duas funções exigem um token de web service de um usuário autenticado
-  (`loginrequired => true`) e são declaradas com `restrictedusers => 1`, ou
-  seja, um administrador precisa autorizar explicitamente cada usuário que
-  poderá chamá-las. Sites que expõem este endpoint devem restringir quais
-  usuários/papéis podem ser autorizados no serviço **Scorm Maker Import**.
-- O upload direto (`draftitemid`) usa a área de rascunho padrão do Moodle,
-  sempre restrita ao usuário do token — não há como acessar arquivos de
-  outro usuário adivinhando o `itemid`.
+- The SCORM function accepts a remote URL only when it uses HTTPS
+  and has exactly the host `scormmaker.com.br`. HTTP, subdomains, look-alike
+  hosts, embedded credentials and ports other than the default HTTPS port
+  are rejected before any network request.
+- The download uses Moodle's cURL wrapper with redirects disabled, so a
+  response from `scormmaker.com.br` cannot make the Moodle server fetch a
+  file from another host. Moodle's cURL security protection against blocked
+  addresses stays active.
+- The package size follows the course upload limit (the same as the activity
+  form). For downloads, `CURLOPT_MAXFILESIZE` and a progress callback stop
+  the transfer as soon as it goes over the limit; a draft file is checked
+  before it is copied. Temporary files live in a request directory
+  (`make_request_directory()`), which Moodle removes at the end of the
+  request.
+- The `draftitemid` parameter is a local alternative: it uses a file
+  uploaded to the user's own draft area and makes no remote download.
+- The Book description and the chapter HTML go through Moodle's
+  `clean_text()` with `FORMAT_HTML` before being stored.
+- Both functions require a web service token of an authenticated user
+  (`loginrequired => true`) and are declared with `restrictedusers => 1`, so
+  an administrator must explicitly authorise each user who may call them.
+  Sites exposing these functions should restrict which users/roles can be
+  authorised on the **Scorm Maker Import** service.
 
-## Privacidade
+## Privacy
 
-Este plugin não armazena nenhum dado pessoal próprio (`null_provider`). As
-atividades que ele cria (instâncias de SCORM, instâncias e capítulos de
-Livro) são conteúdo comum de `mod_scorm`/`mod_book`, já cobertas pelos
-provedores de privacidade desses módulos.
+This plugin stores no personal data of its own (`null_provider`). The
+activities it creates (SCORM instances, Book instances and chapters) are
+ordinary `mod_scorm`/`mod_book` content,
+already covered by those modules' privacy providers.
 
-## Suporte / Licença
+## Support / License
 
-Relate problemas ao mantenedor do plugin no seu site. Licenciado sob a GNU
-GPL v3 ou posterior.
+Report issues at
+<https://github.com/grilo-cricri/moodle-local_scorm_maker_import/issues>.
+
+Licensed under the GNU GPL v3 or later — full text in [`LICENSE`](LICENSE).
+`pix/icon.svg` is original ScormMaker.com.br artwork, licensed under the
+same terms.

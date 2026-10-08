@@ -15,19 +15,20 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Testes da classe book_importer.
+ * Tests for the book_importer class.
  *
  * @package    local_scorm_maker_import
  * @category   test
  * @copyright  2024 ScormMaker.com.br
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \local_scorm_maker_import\local\book_importer
  */
 
 namespace local_scorm_maker_import\local;
 
 /**
- * Testes da classe book_importer.
+ * Tests for the book_importer class.
+ *
+ * @covers \local_scorm_maker_import\local\book_importer
  */
 final class book_importer_test extends \advanced_testcase {
     public function test_split_html_by_h1_with_intro_and_two_chapters(): void {
