@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Provedor de privacidade do plugin local_scorm_maker_import.
+ * Privacy provider for the local_scorm_maker_import plugin.
  *
  * @package   local_scorm_maker_import
  * @copyright 2024 ScormMaker.com.br
@@ -25,14 +25,14 @@
 namespace local_scorm_maker_import\privacy;
 
 /**
- * Provedor de privacidade que declara que este plugin não armazena nenhum dado pessoal próprio.
+ * Privacy provider declaring that this plugin does not store any personal data of its own.
  *
  * @copyright 2024 ScormMaker.com.br
  * @license   https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements \core_privacy\local\metadata\null_provider {
     /**
-     * Retorna a chave da string de idioma que explica por que este plugin não tem dados pessoais.
+     * Returns the language string key explaining why this plugin stores no personal data.
      *
      * @return string
      */

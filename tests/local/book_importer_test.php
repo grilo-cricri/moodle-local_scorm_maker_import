@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Testes da classe book_importer.
+ * Tests for the book_importer class.
  *
  * @package    local_scorm_maker_import
  * @category   test
@@ -26,7 +26,7 @@
 namespace local_scorm_maker_import\local;
 
 /**
- * Testes da classe book_importer.
+ * Tests for the book_importer class.
  *
  * @covers \local_scorm_maker_import\local\book_importer
  */

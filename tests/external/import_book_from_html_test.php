@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Testes da função externa import_book_from_html.
+ * Tests for the import_book_from_html external function.
  *
  * @package    local_scorm_maker_import
  * @category   test
@@ -26,7 +26,7 @@
 namespace local_scorm_maker_import\external;
 
 /**
- * Testes da função externa import_book_from_html.
+ * Tests for the import_book_from_html external function.
  *
  * @covers \local_scorm_maker_import\external\import_book_from_html
  */

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Lógica de importação de pacotes SCORM do plugin local_scorm_maker_import.
+ * SCORM package import logic for the local_scorm_maker_import plugin.
  *
  * @package   local_scorm_maker_import
  * @copyright 2024 ScormMaker.com.br
@@ -28,9 +28,9 @@ use moodle_exception;
 use stdClass;
 
 /**
- * Baixa um pacote SCORM (a partir de uma URL ou de uma área de rascunho) e cria a atividade a partir dele.
+ * Gets a SCORM package (from a URL or a draft area), validates it and creates the activity from it.
  *
-     * @copyright 2024 ScormMaker.com.br
+ * @copyright 2024 ScormMaker.com.br
  * @license   https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class scorm_importer {
@@ -50,9 +50,9 @@ class scorm_importer {
     private const CURLE_ABORTED_BY_CALLBACK = 42;
 
     /**
-     * Verifica se o mod_scorm está instalado e habilitado neste site.
+     * Checks that mod_scorm is installed and enabled on this site.
      *
-     * @throws moodle_exception se o mod_scorm estiver ausente ou desabilitado.
+     * @throws moodle_exception if mod_scorm is missing or disabled.
      */
     public static function require_scorm_module_available(): void {
         global $DB;
@@ -88,13 +88,13 @@ class scorm_importer {
     }
 
     /**
-     * Verifica se a URL remota pertence exatamente à origem autorizada.
+     * Checks that the remote URL belongs exactly to the authorised origin.
      *
-     * A comparação do host é exata de propósito: subdomínios, hosts com sufixo
-     * parecido, credenciais embutidas e portas alternativas não são permitidos.
+     * The host comparison is exact on purpose: subdomains, look-alike host suffixes, embedded credentials and
+     * alternative ports are not allowed.
      *
-     * @param string $url URL a validar.
-     * @throws moodle_exception se a URL não usar a origem autorizada.
+     * @param string $url URL to validate.
+     * @throws moodle_exception if the URL does not use the authorised origin.
      */
     public static function validate_download_url(string $url): void {
         $parts = parse_url($url);
@@ -243,10 +243,10 @@ class scorm_importer {
     }
 
     /**
-     * Confirma que o ZIP no caminho informado contém o arquivo imsmanifest.xml na raiz.
+     * Confirms that the ZIP at the given path contains an imsmanifest.xml file at its root.
      *
-     * @param string $zippath Caminho absoluto do arquivo ZIP baixado.
-     * @throws moodle_exception se o arquivo não for um ZIP válido ou não tiver o manifesto na raiz.
+     * @param string $zippath Absolute path of the downloaded ZIP file.
+     * @throws moodle_exception if the file is not a valid ZIP or has no manifest at its root.
      */
     public static function validate_manifest(string $zippath): void {
         $zip = new \ZipArchive();
@@ -255,7 +255,7 @@ class scorm_importer {
             throw new moodle_exception('invalidzip', 'local_scorm_maker_import');
         }
 
-        // FL_NODIR é omitido de propósito: o manifesto precisa estar na raiz do arquivo, não em uma subpasta.
+        // FL_NODIR is deliberately omitted: the manifest must be at the archive root, not in a subfolder.
         $hasmanifest = $zip->locateName('imsmanifest.xml', \ZipArchive::FL_NOCASE) !== false;
         $zip->close();
 
@@ -265,9 +265,9 @@ class scorm_importer {
     }
 
     /**
-     * Apaga o arquivo temporário baixado, ignorando arquivos inexistentes.
+     * Deletes a temporary file, ignoring files that do not exist.
      *
-     * @param string $path Caminho absoluto do arquivo temporário.
+     * @param string $path Absolute path of the temporary file.
      */
     public static function delete_temp_file(string $path): void {
         if ($path !== '' && file_exists($path)) {
@@ -276,13 +276,13 @@ class scorm_importer {
     }
 
     /**
-     * Cria uma atividade SCORM no curso informado a partir de um arquivo ZIP local.
+     * Creates a SCORM activity in the given course from a local ZIP file.
      *
-     * @param stdClass $course Registro do curso.
-     * @param string $zippath Caminho absoluto do arquivo ZIP já validado.
-     * @param string $name Nome da atividade.
-     * @param int $sectionnum Número da seção onde a atividade será colocada.
-     * @return stdClass Objeto com ->scormid e ->cmid.
+     * @param stdClass $course Course record.
+     * @param string $zippath Absolute path of the already validated ZIP file.
+     * @param string $name Activity name.
+     * @param int $sectionnum Number of the section where the activity will be placed.
+     * @return stdClass Object with ->scormid and ->cmid.
      */
     public static function create_scorm_activity(stdClass $course, string $zippath, string $name, int $sectionnum): stdClass {
         global $CFG, $USER;

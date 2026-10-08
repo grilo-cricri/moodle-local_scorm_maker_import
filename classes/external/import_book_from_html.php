@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Função externa para importar uma atividade Livro a partir de um bloco de HTML.
+ * External function to import a Book activity from a block of HTML.
  *
  * @package   local_scorm_maker_import
  * @copyright 2024 ScormMaker.com.br
@@ -33,14 +33,14 @@ use local_scorm_maker_import\local\book_importer;
 use moodle_exception;
 
 /**
- * Cria uma atividade Livro a partir de um bloco de HTML, um capítulo por seção <h1>.
+ * Creates a Book activity from a block of HTML, one chapter per <h1> section.
  *
-     * @copyright 2024 ScormMaker.com.br
+ * @copyright 2024 ScormMaker.com.br
  * @license   https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class import_book_from_html extends external_api {
     /**
-     * Descreve os parâmetros de import_book_from_html.
+     * Describes the parameters of import_book_from_html.
      *
      * @return external_function_parameters
      */
@@ -60,14 +60,14 @@ class import_book_from_html extends external_api {
     }
 
     /**
-     * Cria uma atividade Livro e divide htmlcontent em capítulos pelas tags <h1>.
+     * Creates a Book activity and splits htmlcontent into chapters at the <h1> tags.
      *
-     * @param int $courseid Id do curso onde a atividade Livro será criada.
-     * @param string $htmlcontent Conteúdo HTML completo do livro.
-     * @param string $name Título do livro.
-     * @param string $description Descrição/introdução do livro em HTML.
-     * @param int $sectionnum Número da seção do curso onde a atividade será adicionada.
-     * @return array Array associativo com bookid, cmid e chapterids.
+     * @param int $courseid Id of the course where the Book activity is created.
+     * @param string $htmlcontent Full HTML content of the book.
+     * @param string $name Title of the book; empty uses the defaultbookname language string.
+     * @param string $description Description/introduction of the book in HTML.
+     * @param int $sectionnum Number of the course section where the activity is added.
+     * @return array Associative array with bookid, cmid and chapterids.
      */
     public static function execute(
         int $courseid,
@@ -92,11 +92,9 @@ class import_book_from_html extends external_api {
             'sectionnum' => $sectionnum,
         ]);
 
-        // O método context_course::instance() por si só já exige que o curso exista (padrão
-        // MUST_EXIST), então um courseid inválido falha aqui de forma idêntica para
-        // qualquer chamador, antes mesmo de require_capability() rodar. Isso garante
-        // que a distinção invalidcourse/sem-permissão nunca possa ser usada para
-        // enumerar quais ids de curso existem no site.
+        // Context_course::instance() already requires the course to exist (MUST_EXIST by default), so an invalid
+        // courseid fails here with invalidcourse for any caller, before require_capability() runs. Same accepted
+        // trade-off as import_scorm_from_url: course ids are not very sensitive.
         try {
             $context = \context_course::instance($courseid);
             require_capability('moodle/course:manageactivities', $context);
@@ -111,7 +109,6 @@ class import_book_from_html extends external_api {
         if ($name === '') {
             $name = get_string('defaultbookname', 'local_scorm_maker_import');
         }
-
 
         $created = book_importer::create_book_activity($course, $name, $description, $sectionnum);
 
@@ -129,7 +126,7 @@ class import_book_from_html extends external_api {
     }
 
     /**
-     * Descreve o retorno de import_book_from_html.
+     * Describes the return value of import_book_from_html.
      *
      * @return external_single_structure
      */

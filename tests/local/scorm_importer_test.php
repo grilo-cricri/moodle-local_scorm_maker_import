@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Testes da classe scorm_importer.
+ * Tests for the scorm_importer class.
  *
  * @package    local_scorm_maker_import
  * @category   test
@@ -26,19 +26,19 @@
 namespace local_scorm_maker_import\local;
 
 /**
- * Testes da classe scorm_importer.
+ * Tests for the scorm_importer class.
  *
  * @covers \local_scorm_maker_import\local\scorm_importer
  */
 final class scorm_importer_test extends \advanced_testcase {
     /**
-     * Verifica que chamar $callback lança uma moodle_exception com o errorcode informado.
+     * Asserts that calling $callback throws a moodle_exception with the given errorcode.
      *
-     * moodle_exception renderiza sua mensagem a partir de uma string de idioma, então o
-     * errorcode não faz parte do texto da mensagem e precisa ser verificado via a propriedade ->errorcode.
+     * moodle_exception renders its message from a language string, so the errorcode is not
+     * part of the message text and must be checked through the ->errorcode property.
      *
-     * @param string $expectedcode Errorcode esperado em moodle_exception::$errorcode.
-     * @param callable $callback Código que deve lançar a exceção.
+     * @param string $expectedcode Expected errorcode in moodle_exception::$errorcode.
+     * @param callable $callback Code that must throw the exception.
      */
     private function assert_throws_errorcode(string $expectedcode, callable $callback): void {
         try {
@@ -117,15 +117,15 @@ final class scorm_importer_test extends \advanced_testcase {
     }
 
     public function test_validate_download_url_accepts_allowed_https_origin(): void {
-        scorm_importer::validate_download_url('https://scormmaker.com.br/pacotes/curso.zip');
+        scorm_importer::validate_download_url('https://scormmaker.com.br/packages/course.zip');
         $this->assertTrue(true);
     }
 
     /**
-     * Verifica que a URL remota fica limitada ao HTTPS e ao host autorizado exato.
+     * Asserts that the remote URL is restricted to HTTPS and the exact allowed host.
      *
      * @dataProvider disallowed_download_url_provider
-     * @param string $url URL que deve ser rejeitada.
+     * @param string $url URL that must be rejected.
      */
     public function test_validate_download_url_rejects_urls_outside_allowed_origin(string $url): void {
         $this->assert_throws_errorcode('invalidscormurl', function () use ($url): void {
@@ -134,7 +134,7 @@ final class scorm_importer_test extends \advanced_testcase {
     }
 
     /**
-     * Fornece URLs que não pertencem à origem autorizada.
+     * Provides URLs that do not belong to the allowed origin.
      *
      * @return array<string, array{string}>
      */

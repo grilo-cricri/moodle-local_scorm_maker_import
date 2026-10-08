@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Função externa para importar um pacote SCORM a partir de uma URL ou de um arquivo enviado.
+ * External function to import a SCORM package from a URL or from an uploaded file.
  *
  * @package   local_scorm_maker_import
  * @copyright 2024 ScormMaker.com.br
@@ -33,14 +33,14 @@ use local_scorm_maker_import\local\scorm_importer;
 use moodle_exception;
 
 /**
- * Importa um pacote SCORM (de uma URL HTTPS autorizada ou de um arquivo enviado) para dentro de um curso.
+ * Imports a SCORM package (from an authorised HTTPS URL or from an uploaded file) into a course.
  *
-     * @copyright 2024 ScormMaker.com.br
+ * @copyright 2024 ScormMaker.com.br
  * @license   https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class import_scorm_from_url extends external_api {
     /**
-     * Descreve os parâmetros de import_scorm_from_url.
+     * Describes the parameters of import_scorm_from_url.
      *
      * @return external_function_parameters
      */
@@ -71,15 +71,14 @@ class import_scorm_from_url extends external_api {
     }
 
     /**
-     * Baixa ou obtém (de uma URL ou de um arquivo de rascunho enviado) um pacote SCORM e cria a atividade a partir dele.
+     * Gets a SCORM package (from a URL or from an uploaded draft file) and creates the activity from it.
      *
-     * @param int $courseid Id do curso onde a atividade SCORM será criada.
-     * @param string $url URL HTTPS do pacote ZIP do SCORM em scormmaker.com.br. Obrigatório,
-     *     a menos que $draftitemid seja informado.
-     * @param string $name Nome da atividade SCORM.
-     * @param int $sectionnum Número da seção do curso onde a atividade será adicionada.
-     * @param int $draftitemid Id da área de rascunho contendo o ZIP do SCORM. Alternativa a $url.
-     * @return array Array associativo com scormid, cmid e warnings.
+     * @param int $courseid Id of the course where the SCORM activity is created.
+     * @param string $url HTTPS URL of the SCORM ZIP package on scormmaker.com.br. Required unless $draftitemid is given.
+     * @param string $name Name of the SCORM activity; empty uses the defaultscormname language string.
+     * @param int $sectionnum Number of the course section where the activity is added.
+     * @param int $draftitemid Id of the draft area holding the SCORM ZIP. Alternative to $url.
+     * @return array Associative array with scormid, cmid and warnings.
      */
     public static function execute(
         int $courseid,
@@ -102,11 +101,10 @@ class import_scorm_from_url extends external_api {
             'draftitemid' => $draftitemid,
         ]);
 
-        // O método context_course::instance() por si só já exige que o curso exista (padrão
-        // MUST_EXIST), então um courseid inválido falha aqui de forma idêntica para
-        // qualquer chamador, antes mesmo de require_capability() rodar. Isso garante
-        // que a distinção invalidcourse/sem-permissão nunca possa ser usada para
-        // enumerar quais ids de curso existem no site.
+        // Context_course::instance() already requires the course to exist (MUST_EXIST by default), so an invalid
+        // courseid fails here with invalidcourse for any caller, before require_capability() runs. This does not
+        // prevent id enumeration: an existing course without permission gives required_capability_exception, a
+        // different code. Accepted, because course ids are not very sensitive.
         try {
             $context = \context_course::instance($courseid);
             require_capability('moodle/course:manageactivities', $context);
@@ -121,7 +119,7 @@ class import_scorm_from_url extends external_api {
         $hasurl = $url !== '';
         $hasdraftitem = $draftitemid > 0;
         if ($hasurl === $hasdraftitem) {
-            // Nenhum ou os dois foram informados — é obrigatório exatamente uma fonte.
+            // Neither or both were given; exactly one source is required.
             throw new moodle_exception('invalidscormsource', 'local_scorm_maker_import');
         }
 
@@ -134,7 +132,6 @@ class import_scorm_from_url extends external_api {
         $zippath = $hasurl
             ? scorm_importer::download_to_temp($url, $maxbytes)
             : scorm_importer::stage_file_from_draft($draftitemid, $maxbytes);
-
 
         try {
             scorm_importer::validate_manifest($zippath);
@@ -151,7 +148,7 @@ class import_scorm_from_url extends external_api {
     }
 
     /**
-     * Descreve o retorno de import_scorm_from_url.
+     * Describes the return value of import_scorm_from_url.
      *
      * @return external_single_structure
      */

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Testes da função externa import_scorm_from_url.
+ * Tests for the import_scorm_from_url external function.
  *
  * @package    local_scorm_maker_import
  * @category   test
@@ -26,7 +26,7 @@
 namespace local_scorm_maker_import\external;
 
 /**
- * Testes da função externa import_scorm_from_url.
+ * Tests for the import_scorm_from_url external function.
  *
  * @covers \local_scorm_maker_import\external\import_scorm_from_url
  */
@@ -60,9 +60,9 @@ final class import_scorm_from_url_test extends \advanced_testcase {
     }
 
     /**
-     * Um chamador sem a capability não pode conseguir distinguir "curso não existe" de
-     * "curso existe mas eu não tenho a capability" pelo tipo de exceção — essa distinção
-     * permitiria a um portador de token enumerar quais ids de curso existem no site.
+     * A caller without the capability must not be able to tell "course does not exist" apart from
+     * "course exists but I lack the capability" by the exception type, since that distinction
+     * would let a token holder enumerate which course ids exist on the site.
      */
     public function test_execute_rejects_invalid_course_identically_without_capability(): void {
         $this->resetAfterTest();

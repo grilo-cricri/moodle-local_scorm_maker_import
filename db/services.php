@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Declarações de funções e serviço de web service do plugin local_scorm_maker_import.
+ * Web service function and service definitions for the local_scorm_maker_import plugin.
  *
  * @package   local_scorm_maker_import
  * @copyright 2024 ScormMaker.com.br
@@ -56,9 +56,9 @@ $services = [
         'restrictedusers' => 1,
         'enabled'         => 0,
         'shortname'       => 'local_scorm_maker_import',
-        // Necessário para o fluxo de upload via draftitemid: o chamador envia o ZIP do SCORM
-        // via /webservice/upload.php (o Moodle só permite isso para serviços com essa flag
-        // habilitada) antes de passar o itemid resultante para import_scorm_from_url.
+        // Required for the draftitemid upload flow: the caller uploads the SCORM ZIP
+        // through /webservice/upload.php (Moodle only allows this for services with this flag
+        // enabled) before passing the resulting itemid to import_scorm_from_url.
         'uploadfiles'     => 1,
     ],
 ];
