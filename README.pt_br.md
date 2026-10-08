@@ -270,5 +270,5 @@ provedores de privacidade desses módulos.
 ## Suporte / Licença
 
 Relate problemas em
-<https://github.com/grilo-cricri/scorm_maker_import/issues>.
+<https://github.com/grilo-cricri/moodle-local_scorm_maker_import/issues>.
 Licenciado sob a GNU GPL v3 ou posterior — texto completo em [`LICENSE`](LICENSE).

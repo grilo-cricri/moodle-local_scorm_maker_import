@@ -2,7 +2,7 @@
 
 This file contains the copy and technical metadata prepared for the initial
 Moodle Marketplace listing. The public source repository is available at
-https://github.com/grilo-cricri/scorm_maker_import. The screenshots, support
+https://github.com/grilo-cricri/moodle-local_scorm_maker_import. The screenshots, support
 channel, test instructions, and maintainer account fields must be completed by
 the publisher before submission.
 
@@ -125,9 +125,9 @@ before submitting the listing:
 
 | Marketplace field | Required action |
 |---|---|
-| Public source repository | https://github.com/grilo-cricri/scorm_maker_import |
-| Issue tracker | https://github.com/grilo-cricri/scorm_maker_import/issues (GitHub Issues enabled) |
-| Documentation URL | https://github.com/grilo-cricri/scorm_maker_import/blob/main/README.md |
+| Public source repository | https://github.com/grilo-cricri/moodle-local_scorm_maker_import |
+| Issue tracker | https://github.com/grilo-cricri/moodle-local_scorm_maker_import/issues (GitHub Issues enabled) |
+| Documentation URL | https://github.com/grilo-cricri/moodle-local_scorm_maker_import/blob/main/README.md |
 | Support/discussion URL | Provide a public support or discussion channel. |
 | Screenshots | Upload the PNGs in `docs/screenshots/` (generated from a Moodle 4.5 test site): external service functions and the activities created by the web services. |
 | Test SCORM package | Provide a working public ZIP URL under `https://scormmaker.com.br` for the remote-download review flow, or instruct reviewers to use the draft-upload flow. |

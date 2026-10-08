@@ -280,7 +280,7 @@ already covered by those modules' privacy providers.
 ## Support / License
 
 Report issues at
-<https://github.com/grilo-cricri/scorm_maker_import/issues>.
+<https://github.com/grilo-cricri/moodle-local_scorm_maker_import/issues>.
 
 Licensed under the GNU GPL v3 or later — full text in [`LICENSE`](LICENSE).
 `pix/icon.svg` is original ScormMaker.com.br artwork, licensed under the
