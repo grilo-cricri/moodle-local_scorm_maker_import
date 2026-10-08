@@ -204,4 +204,10 @@ final class scorm_importer_test extends \advanced_testcase {
         $this->assertEquals($result->scormid, $cm->instance);
         $this->assertSame('', $cm->idnumber);
     }
+
+    public function test_delete_temp_file_ignores_missing_file(): void {
+        scorm_importer::delete_temp_file('');
+        scorm_importer::delete_temp_file(make_request_directory() . '/missing.zip');
+        $this->assertTrue(true);
+    }
 }

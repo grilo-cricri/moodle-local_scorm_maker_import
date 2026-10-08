@@ -58,22 +58,12 @@ class scorm_importer {
     }
 
     /**
-     * Garante que o diretório temporário de trabalho do plugin exista e retorna seu caminho.
+     * Returns the path of a new, unique temporary ZIP file inside a request directory.
      *
-     * @param string $erroronfailure Código de erro do arquivo de idioma deste plugin a lançar
-     *     se o diretório não puder ser criado.
-     * @return string Caminho absoluto do diretório temporário.
-     * @throws moodle_exception se o diretório não puder ser criado.
+     * @return string Absolute path of the (not yet created) temporary file.
      */
-    protected static function ensure_temp_dir(string $erroronfailure): string {
-        global $CFG;
-
-        $tempsubdir = $CFG->tempdir . '/scorm_maker_import';
-        if (!is_dir($tempsubdir) && !mkdir($tempsubdir, $CFG->directorypermissions, true) && !is_dir($tempsubdir)) {
-            throw new moodle_exception($erroronfailure, 'local_scorm_maker_import');
-        }
-
-        return $tempsubdir;
+    protected static function new_temp_path(): string {
+        return make_request_directory() . '/' . uniqid('package_', true) . '.zip';
     }
 
     /**
@@ -118,12 +108,10 @@ class scorm_importer {
 
         self::validate_download_url($url);
 
-        $tempsubdir = self::ensure_temp_dir('scormdownloaderror');
-        $tempfile = $tempsubdir . '/' . uniqid('scorm_', true) . '.zip';
+        $tempfile = self::new_temp_path();
 
         $filehandle = fopen($tempfile, 'wb');
         if ($filehandle === false) {
-            self::delete_temp_file($tempfile);
             throw new moodle_exception('scormdownloaderror', 'local_scorm_maker_import', '', $url);
         }
 
@@ -182,8 +170,7 @@ class scorm_importer {
             throw new moodle_exception('invaliddraftfile', 'local_scorm_maker_import');
         }
 
-        $tempsubdir = self::ensure_temp_dir('invaliddraftfile');
-        $tempfile = $tempsubdir . '/' . uniqid('scorm_', true) . '.zip';
+        $tempfile = self::new_temp_path();
         reset($files)->copy_content_to($tempfile);
 
         return $tempfile;
