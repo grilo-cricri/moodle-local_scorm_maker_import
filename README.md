@@ -11,6 +11,16 @@ doing it by hand:
 - **Import a Book** (`mod_book`) from a block of HTML, split automatically
   into chapters at the `<h1>` tags.
 
+## Screenshots
+
+The plugin has no user interface of its own; these show its service and the
+activities it creates (Moodle 4.5):
+
+- [External service functions](docs/screenshots/01-external-service-functions.png)
+- [Course with the imported SCORM and Book activities](docs/screenshots/02-course-with-imported-activities.png)
+- [Imported SCORM package in the player](docs/screenshots/03-imported-scorm-player.png)
+- [Imported Book, one chapter per `<h1>`](docs/screenshots/04-imported-book-chapter.png)
+
 ## Features
 
 - `local_scorm_maker_import_import_scorm_from_url` — downloads a SCORM
